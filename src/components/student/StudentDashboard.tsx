@@ -96,7 +96,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div className={`text-3xl font-black ${colors.text}`}>
               {user.streak}
             </div>
-            <div className="text-lime-400 text-xs font-medium mt-1">dias</div>
+            <div className="text-lime-400 text-xs font-medium mt-1">Treinos</div>
           </div>
 
           <div
