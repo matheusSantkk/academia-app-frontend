@@ -28,8 +28,6 @@ export default function App() {
     null
   );
 
-  // Tema agora é gerenciado pelo ThemeProvider (useTheme) — removido o estado local
-
   const handleLogin = (userData: UserData) => {
     setUser(userData);
     setActiveTab("dashboard");
@@ -63,6 +61,7 @@ export default function App() {
               setSelectedStudentId={setSelectedStudentId}
             />
           );
+
         case "students-list":
           return (
             <StudentsListScreen
@@ -70,6 +69,7 @@ export default function App() {
               setSelectedStudentId={setSelectedStudentId}
             />
           );
+
         case "student-detail":
           return (
             <StudentDetailScreen
@@ -78,10 +78,13 @@ export default function App() {
               setSelectedStudentId={setSelectedStudentId}
             />
           );
+
         case "ranking":
           return <RankingScreen />;
+
         case "settings":
-          return <SettingsScreen user={user} />;
+          return <SettingsScreen user={user} onLogout={handleLogout} />;
+
         default:
           return (
             <TeacherDashboard
@@ -96,12 +99,16 @@ export default function App() {
     switch (activeTab) {
       case "workouts":
         return <WorkoutsListScreen user={user} />;
+
       case "achievements":
         return <AchievementsScreen user={user} />;
+
       case "ranking":
         return <RankingScreen />;
+
       case "settings":
-        return <SettingsScreen user={user} />;
+        return <SettingsScreen user={user} onLogout={handleLogout} />;
+
       default:
         return <StudentDashboard user={user} setActiveTab={setActiveTab} />;
     }

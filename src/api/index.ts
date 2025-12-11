@@ -18,7 +18,9 @@ import type {
   StudentData,
   StudentMedicalInfo,
 } from "../types";
-// Nota: Os mocks e tipos agora são importados dos arquivos acima
+import { isMockMode } from "./config";
+import { httpClient } from "./client";
+import { API_ENDPOINTS } from "./config";
 
 // FUNÇÕES AUXILIARES
 export const calculateLevelProgress = (
@@ -26,9 +28,7 @@ export const calculateLevelProgress = (
   level: number
 ): number => {
   const pointsForNextLevel = level * 50;
-  // Correção: Se pointsForNextLevel for 0 (no nível 0, embora improvável), evite divisão por zero.
   if (pointsForNextLevel === 0) return 0;
-
   const pointsInCurrentLevel = points % pointsForNextLevel;
   return (pointsInCurrentLevel / pointsForNextLevel) * 100;
 };
@@ -44,66 +44,7 @@ export const calculateBonusXP = (
   return Math.round(baseXP * (1 + totalBonus / 100));
 };
 
-// API MOCK
-export const api = {
-  login: async (email: string, _password: string): Promise<UserData> => {
-    // referência para evitar warning de parâmetro não utilizado
-    void _password;
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        if (email.includes("professor")) {
-          resolve(mockTeacherUser);
-        } else {
-          resolve(mockStudentUser);
-        }
-      }, 500);
-    });
-  },
-  getWorkouts: async (): Promise<Workout[]> => {
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(mockWorkouts), 300)
-    );
-  },
-  getAchievements: async (): Promise<Achievement[]> => {
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(mockAchievements), 300)
-    );
-  },
-  getRanking: async (type: "monthly" | "total"): Promise<RankingUser[]> => {
-    return new Promise((resolve) => {
-      setTimeout(
-        () =>
-          resolve(type === "monthly" ? mockRankingMonthly : mockRankingTotal),
-        300
-      );
-    });
-  },
-  getStudents: async (): Promise<StudentData[]> => {
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(studentsStore.list()), 300)
-    );
-  },
-  getMedicalInfo: async (_studentId: string): Promise<StudentMedicalInfo> => {
-    // referência para evitar warning de parâmetro não utilizado em mock
-    void _studentId;
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(mockMedicalInfo), 300)
-    );
-  },
-  createStudent: async (
-    student: Partial<StudentData>
-  ): Promise<StudentData> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newStudent = studentsStore.create(student);
-        resolve(newStudent);
-      }, 400);
-    });
-  },
-};
-
-// --- Persistence helpers (students + trainings) ---
-// Use localStorage to persist created/updated students and trainings between reloads.
+// --- Storage helpers ---
 const LOCAL_STUDENTS_KEY = "app_students_v1";
 const LOCAL_TRAININGS_KEY = "app_trainings_v1";
 
@@ -123,7 +64,6 @@ const studentsStore = (() => {
     } catch {
       // ignore parse errors
     }
-    // fallback to initial mock
     students = initialMockStudents.slice();
     save();
     return students;
@@ -137,13 +77,12 @@ const studentsStore = (() => {
     }
   };
 
-  // initialize
   load();
 
   return {
     list: () => students,
     create: (partial: Partial<StudentData>): StudentData => {
-      const id = `s${students.length + 1}`;
+      const id = `s${Date.now()}`;
       const newStudent: StudentData = {
         id,
         name: partial.name || "Novo Aluno",
@@ -204,18 +143,77 @@ const trainingsStore = (() => {
   } as const;
 })();
 
-// expose helper methods on api
-Object.assign(api, {
+// --- Mock API Implementation ---
+const mockAPI = {
+  login: async (email: string, _password: string): Promise<UserData> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        if (email.includes("professor")) {
+          resolve(mockTeacherUser);
+        } else {
+          resolve(mockStudentUser);
+        }
+      }, 500);
+    });
+  },
+
+  getWorkouts: async (): Promise<Workout[]> => {
+    return new Promise((resolve) =>
+      setTimeout(() => resolve(mockWorkouts), 300)
+    );
+  },
+
+  getAchievements: async (): Promise<Achievement[]> => {
+    return new Promise((resolve) =>
+      setTimeout(() => resolve(mockAchievements), 300)
+    );
+  },
+
+  getRanking: async (type: "monthly" | "total"): Promise<RankingUser[]> => {
+    return new Promise((resolve) => {
+      setTimeout(
+        () =>
+          resolve(type === "monthly" ? mockRankingMonthly : mockRankingTotal),
+        300
+      );
+    });
+  },
+
+  getStudents: async (): Promise<StudentData[]> => {
+    return new Promise((resolve) =>
+      setTimeout(() => resolve(studentsStore.list()), 300)
+    );
+  },
+
+  getMedicalInfo: async (_studentId: string): Promise<StudentMedicalInfo> => {
+    return new Promise((resolve) =>
+      setTimeout(() => resolve(mockMedicalInfo), 300)
+    );
+  },
+
+  createStudent: async (
+    student: Partial<StudentData>
+  ): Promise<StudentData> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newStudent = studentsStore.create(student);
+        resolve(newStudent);
+      }, 400);
+    });
+  },
+
   updateStudent: async (id: string, patch: Partial<StudentData>) => {
     return new Promise<StudentData | null>((resolve) => {
       setTimeout(() => resolve(studentsStore.update(id, patch)), 300);
     });
   },
+
   getTraining: async (studentId: string): Promise<Workout[]> => {
     return new Promise((resolve) =>
       setTimeout(() => resolve(trainingsStore.get(studentId)), 250)
     );
   },
+
   saveTraining: async (
     studentId: string,
     workouts: Workout[]
@@ -224,4 +222,104 @@ Object.assign(api, {
       setTimeout(() => resolve(trainingsStore.set(studentId, workouts)), 400)
     );
   },
-});
+};
+
+// --- Server API Implementation ---
+// Para ativar, defina VITE_API_MODE=server no .env
+const serverAPI = {
+  login: async (email: string, password: string): Promise<UserData> => {
+    const response = await httpClient.post<{ user: UserData; token: string }>(
+      API_ENDPOINTS.AUTH.LOGIN,
+      { email, password }
+    );
+
+    // Salva o token
+    if (response.token) {
+      httpClient.setAuthToken(response.token);
+      localStorage.setItem("auth_token", response.token);
+    }
+
+    return response.user;
+  },
+
+  getWorkouts: async (): Promise<Workout[]> => {
+    return httpClient.get<Workout[]>(API_ENDPOINTS.WORKOUTS.LIST);
+  },
+
+  getAchievements: async (): Promise<Achievement[]> => {
+    return httpClient.get<Achievement[]>(
+      API_ENDPOINTS.ACHIEVEMENTS.USER_ACHIEVEMENTS
+    );
+  },
+
+  getRanking: async (type: "monthly" | "total"): Promise<RankingUser[]> => {
+    const endpoint =
+      type === "monthly"
+        ? API_ENDPOINTS.RANKING.MONTHLY
+        : API_ENDPOINTS.RANKING.TOTAL;
+    return httpClient.get<RankingUser[]>(endpoint);
+  },
+
+  getStudents: async (): Promise<StudentData[]> => {
+    return httpClient.get<StudentData[]>(API_ENDPOINTS.STUDENTS.LIST);
+  },
+
+  getMedicalInfo: async (studentId: string): Promise<StudentMedicalInfo> => {
+    return httpClient.get<StudentMedicalInfo>(
+      API_ENDPOINTS.STUDENTS.MEDICAL_INFO(studentId)
+    );
+  },
+
+  createStudent: async (
+    student: Partial<StudentData>
+  ): Promise<StudentData> => {
+    return httpClient.post<StudentData>(API_ENDPOINTS.STUDENTS.CREATE, student);
+  },
+
+  updateStudent: async (
+    id: string,
+    patch: Partial<StudentData>
+  ): Promise<StudentData | null> => {
+    return httpClient.patch<StudentData>(
+      API_ENDPOINTS.STUDENTS.UPDATE(id),
+      patch
+    );
+  },
+
+  getTraining: async (studentId: string): Promise<Workout[]> => {
+    return httpClient.get<Workout[]>(API_ENDPOINTS.TRAINING.GET(studentId));
+  },
+
+  saveTraining: async (
+    studentId: string,
+    workouts: Workout[]
+  ): Promise<Workout[]> => {
+    return httpClient.post<Workout[]>(API_ENDPOINTS.TRAINING.SAVE(studentId), {
+      workouts,
+    });
+  },
+};
+
+// --- Exporta a API correta baseado no modo ---
+export const api = isMockMode() ? mockAPI : serverAPI;
+
+/**
+ * Função para fazer logout
+ */
+export const logout = () => {
+  httpClient.clearAuthToken();
+  localStorage.removeItem("auth_token");
+};
+
+/**
+ * Função para restaurar sessão (carregar token salvo)
+ */
+export const restoreSession = () => {
+  const token = localStorage.getItem("auth_token");
+  if (token) {
+    httpClient.setAuthToken(token);
+  }
+};
+
+// Restaura sessão ao carregar
+restoreSession();
