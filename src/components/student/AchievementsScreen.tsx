@@ -16,7 +16,6 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
-  // Evita erro do TS: user está sendo usado
   const userName = user.name;
 
   useEffect(() => {
@@ -148,7 +147,8 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
           </div>
         </div>
       </div>
-
+      
+ 
       <div className="p-6 space-y-3">
         {filteredAchievements.map((achievement) => (
           <div

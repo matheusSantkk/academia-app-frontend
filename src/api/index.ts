@@ -1,5 +1,3 @@
-// src/api/index.ts
-
 import {
   mockStudentUser,
   mockTeacherUser,
@@ -300,20 +298,13 @@ const serverAPI = {
   },
 };
 
-// --- Exporta a API correta baseado no modo ---
 export const api = isMockMode() ? mockAPI : serverAPI;
 
-/**
- * Função para fazer logout
- */
 export const logout = () => {
   httpClient.clearAuthToken();
   localStorage.removeItem("auth_token");
 };
 
-/**
- * Função para restaurar sessão (carregar token salvo)
- */
 export const restoreSession = () => {
   const token = localStorage.getItem("auth_token");
   if (token) {
@@ -321,5 +312,4 @@ export const restoreSession = () => {
   }
 };
 
-// Restaura sessão ao carregar
 restoreSession();

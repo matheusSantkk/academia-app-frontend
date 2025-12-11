@@ -1,4 +1,3 @@
-// src/api/client.ts
 
 import {
   API_CONFIG,
@@ -7,9 +6,6 @@ import {
   logResponse,
 } from "./config";
 
-/**
- * Classe de erro personalizada para erros da API
- */
 export class APIError extends Error {
   statusCode: number;
   data?: unknown;
@@ -23,9 +19,7 @@ export class APIError extends Error {
   }
 }
 
-/**
- * Interface para opções de requisição
- */
+
 interface RequestOptions {
   method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   endpoint: string;
@@ -34,14 +28,6 @@ interface RequestOptions {
   params?: Record<string, string | number | boolean>;
 }
 
-/**
- * Cliente HTTP para fazer requisições à API
- *
- * Para integração com Node.js:
- * 1. Implemente a lógica de autenticação (JWT)
- * 2. Adicione interceptors para refresh token
- * 3. Implemente retry logic se necessário
- */
 export class HttpClient {
   private baseURL: string;
   private headers: Record<string, string>;
@@ -53,23 +39,15 @@ export class HttpClient {
     this.timeout = API_CONFIG.TIMEOUT;
   }
 
-  /**
-   * Define o token de autenticação
-   */
+
   setAuthToken(token: string) {
     this.headers["Authorization"] = `Bearer ${token}`;
   }
 
-  /**
-   * Remove o token de autenticação
-   */
   clearAuthToken() {
     delete this.headers["Authorization"];
   }
 
-  /**
-   * Constrói a URL com query parameters
-   */
   private buildURL(
     endpoint: string,
     params?: Record<string, string | number | boolean>
@@ -85,9 +63,6 @@ export class HttpClient {
     return url.toString();
   }
 
-  /**
-   * Faz uma requisição HTTP
-   */
   private async request<T>(options: RequestOptions): Promise<T> {
     const { method, endpoint, data, headers = {}, params } = options;
     const url = this.buildURL(endpoint, params);
@@ -153,9 +128,7 @@ export class HttpClient {
     }
   }
 
-  /**
-   * GET request
-   */
+
   async get<T>(
     endpoint: string,
     params?: Record<string, string | number | boolean>
@@ -167,9 +140,7 @@ export class HttpClient {
     });
   }
 
-  /**
-   * POST request
-   */
+  
   async post<T>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>({
       method: "POST",
@@ -178,9 +149,6 @@ export class HttpClient {
     });
   }
 
-  /**
-   * PUT request
-   */
   async put<T>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>({
       method: "PUT",
@@ -189,9 +157,6 @@ export class HttpClient {
     });
   }
 
-  /**
-   * PATCH request
-   */
   async patch<T>(endpoint: string, data?: unknown): Promise<T> {
     return this.request<T>({
       method: "PATCH",
@@ -200,9 +165,6 @@ export class HttpClient {
     });
   }
 
-  /**
-   * DELETE request
-   */
   async delete<T>(endpoint: string): Promise<T> {
     return this.request<T>({
       method: "DELETE",
@@ -211,14 +173,8 @@ export class HttpClient {
   }
 }
 
-/**
- * Instância única do cliente HTTP
- */
 export const httpClient = new HttpClient();
 
-/**
- * Hook para lidar com erros da API
- */
 export const handleAPIError = (error: unknown): string => {
   if (error instanceof APIError) {
     return error.message;

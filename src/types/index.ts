@@ -1,4 +1,3 @@
-// src/types/index.ts
 export interface StudentData extends UserData {
   age: number;
   weight?: number;

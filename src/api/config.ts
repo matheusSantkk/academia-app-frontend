@@ -1,34 +1,17 @@
-// src/api/config.ts
-
-/**
- * Configuração da API
- *
- * Para integração com backend Node.js:
- * 1. Defina API_BASE_URL para o endpoint do seu servidor
- * 2. Implemente as funções em api/client.ts
- * 3. Adicione autenticação JWT conforme necessário
- */
 
 export const API_CONFIG = {
-  // Modo de desenvolvimento: use 'mock' para dados simulados ou 'server' para API real
   MODE: (import.meta.env.VITE_API_MODE || "mock") as "mock" | "server",
 
-  // URL base da API (substitua pela URL do seu servidor Node.js)
   BASE_URL: import.meta.env.VITE_API_URL || "http://localhost:3000/api",
 
-  // Timeout para requisições (ms)
   TIMEOUT: 10000,
 
-  // Headers padrão
   HEADERS: {
     "Content-Type": "application/json",
   },
 };
 
-/**
- * Endpoints da API
- * Organize todos os endpoints em um único lugar para fácil manutenção
- */
+
 export const API_ENDPOINTS = {
   // Auth
   AUTH: {
@@ -92,9 +75,7 @@ export const API_ENDPOINTS = {
   },
 };
 
-/**
- * Códigos de erro da API
- */
+
 export const API_ERROR_CODES = {
   UNAUTHORIZED: 401,
   FORBIDDEN: 403,
@@ -103,9 +84,7 @@ export const API_ERROR_CODES = {
   SERVER_ERROR: 500,
 };
 
-/**
- * Mensagens de erro amigáveis
- */
+
 export const ERROR_MESSAGES: Record<number, string> = {
   [API_ERROR_CODES.UNAUTHORIZED]: "Sessão expirada. Faça login novamente.",
   [API_ERROR_CODES.FORBIDDEN]: "Você não tem permissão para esta ação.",
@@ -116,32 +95,23 @@ export const ERROR_MESSAGES: Record<number, string> = {
     "Erro no servidor. Tente novamente mais tarde.",
 };
 
-/**
- * Verifica se está em modo de desenvolvimento
- */
+
 export const isDevelopment = () => {
   return import.meta.env.DEV;
 };
 
-/**
- * Verifica se está usando mock
- */
+
 export const isMockMode = () => {
   return API_CONFIG.MODE === "mock";
 };
 
-/**
- * Log de requisições (apenas em desenvolvimento)
- */
 export const logRequest = (method: string, url: string, data?: unknown) => {
   if (isDevelopment()) {
     console.log(`[API] ${method} ${url}`, data ? data : "");
   }
 };
 
-/**
- * Log de respostas (apenas em desenvolvimento)
- */
+
 export const logResponse = (url: string, data: unknown) => {
   if (isDevelopment()) {
     console.log(`[API Response] ${url}`, data);

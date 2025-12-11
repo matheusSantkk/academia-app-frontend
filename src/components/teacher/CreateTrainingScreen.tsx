@@ -177,7 +177,7 @@ export default function CreateTrainingScreen({
           </div>
         </div>
 
-        {/* Student Card (when editing) */}
+        {/* Card de Estudantess (when editing) */}
         {isEditMode && selectedStudent && (
           <div
             className={`${colors.card} border ${colors.border} p-5 rounded-2xl mb-6 shadow-md`}
@@ -409,7 +409,7 @@ export default function CreateTrainingScreen({
           </div>
         )}
 
-        {/* Student List (when not editing) */}
+        {/* Lista de estudantes (when not editing) */}
         {!isEditMode && (
           <>
             <div className="mb-6">

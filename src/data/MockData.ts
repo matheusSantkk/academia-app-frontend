@@ -1,5 +1,3 @@
-// src/data/mockData.ts
-
 import type {
   UserData,
   Workout,

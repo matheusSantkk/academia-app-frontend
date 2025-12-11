@@ -1,5 +1,3 @@
-// src/components/common/BottomNav.tsx
-
 import React from "react";
 import { Dumbbell, Trophy, Crown, User, Home, Settings } from "lucide-react";
 import { useTheme } from "../../theme/context";
@@ -57,7 +55,7 @@ const BottomNav: React.FC<BottomNavProps> = ({
             <span className="text-xs font-medium">Ranking</span>
           </button>
 
-          {/* ✔️ Configurações para professor */}
+          {/* Configurações para professor */}
           <button
             onClick={() => setActiveTab("settings")}
             className={`flex flex-col items-center gap-1 ${
@@ -72,7 +70,7 @@ const BottomNav: React.FC<BottomNavProps> = ({
     );
   }
 
-  // ✔️ Navegação do Aluno
+  // Navegação do Aluno
   return (
     <div
       className={`fixed bottom-0 left-0 right-0 ${colors.card} border-t ${colors.border} px-6 py-4 z-10`}
@@ -120,7 +118,7 @@ const BottomNav: React.FC<BottomNavProps> = ({
           <span className="text-xs font-medium">Ranking</span>
         </button>
 
-        {/* ✔️ Nova aba Configurações */}
+        {/* Nova aba Configurações */}
         <button
           onClick={() => setActiveTab("settings")}
           className={`flex flex-col items-center gap-1 ${
