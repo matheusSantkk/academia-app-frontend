@@ -19,27 +19,6 @@ const RankingScreen: React.FC = () => {
     });
   }, [tab]);
 
-  const getMedalEmoji = (position: number) => {
-    if (position === 1) return "🥇";
-    if (position === 2) return "🥈";
-    if (position === 3) return "🥉";
-    return "";
-  };
-
-  const getMedalColor = (position: number) => {
-    if (position === 1) return "from-yellow-400 to-yellow-500";
-    if (position === 2) return "from-gray-300 to-gray-400";
-    if (position === 3) return "from-orange-400 to-orange-500";
-    return "";
-  };
-
-  const getPositionBg = (position: number) => {
-    if (position === 1) return "bg-yellow-400/10 border-yellow-400";
-    if (position === 2) return "bg-gray-300/10 border-gray-300";
-    if (position === 3) return "bg-orange-400/10 border-orange-400";
-    return colors.border;
-  };
-
   const topThree = ranking.slice(0, 3);
   const others = ranking.slice(3);
 
@@ -101,7 +80,7 @@ const RankingScreen: React.FC = () => {
         </div>
       ) : (
         <div className="p-6 space-y-6">
-          {/* Top 3 - Pódio */}
+          {/* Top 3 */}
           {topThree.length > 0 && (
             <div
               className={`${colors.card} border ${colors.border} rounded-2xl p-6 shadow-lg`}
@@ -114,7 +93,7 @@ const RankingScreen: React.FC = () => {
               </h2>
 
               <div className="flex items-end justify-center gap-3 mb-6">
-                {/* 2º Lugar */}
+                {/* 2º */}
                 {topThree[1] && (
                   <div className="flex flex-col items-center flex-1">
                     <div className="relative">
@@ -139,7 +118,7 @@ const RankingScreen: React.FC = () => {
                   </div>
                 )}
 
-                {/* 1º Lugar */}
+                {/* 1º */}
                 {topThree[0] && (
                   <div className="flex flex-col items-center flex-1">
                     <div className="relative">
@@ -164,7 +143,7 @@ const RankingScreen: React.FC = () => {
                   </div>
                 )}
 
-                {/* 3º Lugar */}
+                {/* 3º */}
                 {topThree[2] && (
                   <div className="flex flex-col items-center flex-1">
                     <div className="relative">
@@ -192,7 +171,7 @@ const RankingScreen: React.FC = () => {
             </div>
           )}
 
-          {/* Demais Posições */}
+          {/* Demais */}
           {others.length > 0 && (
             <div className="space-y-2">
               <h3
@@ -200,6 +179,7 @@ const RankingScreen: React.FC = () => {
               >
                 Demais Classificados
               </h3>
+
               {others.map((user) => (
                 <div
                   key={user.id}

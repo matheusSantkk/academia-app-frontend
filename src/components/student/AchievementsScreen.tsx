@@ -16,12 +16,15 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
+  // Evita erro do TS: user está sendo usado
+  const userName = user.name;
+
   useEffect(() => {
     api.getAchievements().then(setAchievements);
   }, []);
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
-  const totalPoints = unlockedCount * 50; // 50 pontos por conquista
+  const totalPoints = unlockedCount * 50;
 
   const filteredAchievements = achievements.filter((a) => {
     if (filter === "unlocked") return a.unlocked;
@@ -30,10 +33,10 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
   });
 
   const getRarityColor = (id: string) => {
-    if (id === "a5") return "from-purple-500 to-pink-500"; // Lendário
-    if (id === "a4") return "from-blue-500 to-cyan-500"; // Raro
-    if (id === "a3") return "from-green-500 to-lime-500"; // Incomum
-    return "from-gray-500 to-gray-600"; // Comum
+    if (id === "a5") return "from-purple-500 to-pink-500";
+    if (id === "a4") return "from-blue-500 to-cyan-500";
+    if (id === "a3") return "from-green-500 to-lime-500";
+    return "from-gray-500 to-gray-600";
   };
 
   const getRarityLabel = (id: string) => {
@@ -45,7 +48,6 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
 
   return (
     <div className={`min-h-screen ${colors.background} ${colors.text} pb-24`}>
-      {/* Header */}
       <div
         className={`${colors.card} border-b ${colors.border} p-6 pb-8 shadow-sm`}
       >
@@ -54,14 +56,15 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
             <Trophy className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className={`${colors.text} text-2xl font-bold`}>Conquistas</h1>
+            <h1 className={`${colors.text} text-2xl font-bold`}>
+              Conquistas de {userName}
+            </h1>
             <p className={`${colors.textSecondary} text-sm`}>
               Desbloqueie todas as conquistas
             </p>
           </div>
         </div>
 
-        {/* Progress Card */}
         <div
           className={`${colors.card} border-2 border-yellow-400/50 rounded-2xl p-5 text-center shadow-lg bg-gradient-to-br from-yellow-400/5 to-orange-500/5`}
         >
@@ -77,12 +80,15 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
             </div>
           </div>
 
-          {/* Progress Bar */}
           <div className="w-full bg-gray-700/30 rounded-full h-3 mb-3 overflow-hidden">
             <div
               className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full transition-all duration-500"
               style={{
-                width: `${(unlockedCount / achievements.length) * 100}%`,
+                width: `${
+                  achievements.length > 0
+                    ? (unlockedCount / achievements.length) * 100
+                    : 0
+                }%`,
               }}
             />
           </div>
@@ -96,14 +102,15 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
             <div className="flex items-center gap-1">
               <TrendingUp className="w-4 h-4 text-lime-400" />
               <span className={colors.textSecondary}>
-                {Math.round((unlockedCount / achievements.length) * 100)}%
-                completo
+                {achievements.length > 0
+                  ? Math.round((unlockedCount / achievements.length) * 100)
+                  : 0}
+                % completo
               </span>
             </div>
           </div>
         </div>
 
-        {/* Filters */}
         <div className="mt-4">
           <div className={`flex gap-2 ${colors.input} p-1 rounded-xl`}>
             <button
@@ -116,6 +123,7 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
             >
               Todas ({achievements.length})
             </button>
+
             <button
               onClick={() => setFilter("unlocked")}
               className={`flex-1 py-2.5 rounded-lg font-medium transition-all text-sm ${
@@ -126,6 +134,7 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
             >
               Desbloqueadas ({unlockedCount})
             </button>
+
             <button
               onClick={() => setFilter("locked")}
               className={`flex-1 py-2.5 rounded-lg font-medium transition-all text-sm ${
@@ -140,7 +149,6 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* Achievements List */}
       <div className="p-6 space-y-3">
         {filteredAchievements.map((achievement) => (
           <div
@@ -152,7 +160,6 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
             }`}
           >
             <div className="flex items-start gap-4">
-              {/* Icon */}
               <div
                 className={`relative w-16 h-16 rounded-xl flex items-center justify-center text-4xl shrink-0 ${
                   achievement.unlocked
@@ -169,7 +176,6 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
                 )}
               </div>
 
-              {/* Content */}
               <div className="flex-1">
                 <div className="flex items-start justify-between mb-2">
                   <div>
@@ -186,6 +192,7 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
                       </span>
                     )}
                   </div>
+
                   {achievement.unlocked && (
                     <Star className="w-6 h-6 text-yellow-400 shrink-0" />
                   )}
@@ -202,7 +209,11 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
                       Desbloqueado em{" "}
                       {new Date(achievement.unlockedAt).toLocaleDateString(
                         "pt-BR",
-                        { day: "2-digit", month: "long", year: "numeric" }
+                        {
+                          day: "2-digit",
+                          month: "long",
+                          year: "numeric",
+                        }
                       )}
                     </span>
                   </div>
