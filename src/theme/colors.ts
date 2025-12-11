@@ -1,8 +1,3 @@
-/**
- * Paleta de cores e classes Tailwind por tema
- * Centraliza todas as cores para dark e light mode
- */
-
 export type ThemeMode = "dark" | "light";
 
 export interface ThemeColors {

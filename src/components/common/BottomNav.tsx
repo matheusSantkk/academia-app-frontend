@@ -36,9 +36,9 @@ const BottomNav: React.FC<BottomNavProps> = ({
           </button>
 
           <button
-            onClick={() => setActiveTab("students")}
+            onClick={() => setActiveTab("students-list")}
             className={`flex flex-col items-center gap-1 ${
-              activeTab === "students" || activeTab === "student-detail"
+              activeTab === "students-list" || activeTab === "student-detail"
                 ? "text-lime-400"
                 : colors.textSecondary
             }`}

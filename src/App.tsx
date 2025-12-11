@@ -17,10 +17,16 @@ import AchievementsScreen from "./components/student/AchievementsScreen";
 // Componentes do Professor
 import TeacherDashboard from "./components/teacher/TeacherDashboard";
 import StudentDetailScreen from "./components/teacher/StudentDetailScreen";
+import CreateTrainingScreen from "./components/teacher/CreateTrainingScreen";
+import CreateStudentScreen from "./components/teacher/CreateStudentScreen";
+import StudentsListScreen from "./components/teacher/StudentsListScreen";
 
 export default function App() {
   const [user, setUser] = useState<UserData | null>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
+  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
+    null
+  );
 
   // Tema agora é gerenciado pelo ThemeProvider (useTheme) — removido o estado local
 
@@ -41,14 +47,48 @@ export default function App() {
   const renderContent = () => {
     if (user.role === "teacher") {
       switch (activeTab) {
+        case "create-student":
+          return (
+            <CreateStudentScreen
+              setActiveTab={setActiveTab}
+              setSelectedStudentId={setSelectedStudentId}
+            />
+          );
+
+        case "create-training":
+          return (
+            <CreateTrainingScreen
+              setActiveTab={setActiveTab}
+              selectedStudentId={selectedStudentId}
+              setSelectedStudentId={setSelectedStudentId}
+            />
+          );
+        case "students-list":
+          return (
+            <StudentsListScreen
+              setActiveTab={setActiveTab}
+              setSelectedStudentId={setSelectedStudentId}
+            />
+          );
         case "student-detail":
-          return <StudentDetailScreen />;
+          return (
+            <StudentDetailScreen
+              studentId={selectedStudentId}
+              setActiveTab={setActiveTab}
+              setSelectedStudentId={setSelectedStudentId}
+            />
+          );
         case "ranking":
           return <RankingScreen />;
         case "settings":
           return <SettingsScreen user={user} />;
         default:
-          return <TeacherDashboard setActiveTab={setActiveTab} />;
+          return (
+            <TeacherDashboard
+              setActiveTab={setActiveTab}
+              setSelectedStudentId={setSelectedStudentId}
+            />
+          );
       }
     }
 
