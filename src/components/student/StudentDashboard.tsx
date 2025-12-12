@@ -22,6 +22,7 @@ import { getThemeColors } from "../../theme/colors";
 interface StudentDashboardProps {
   user: UserData;
   setActiveTab: (tab: string) => void;
+  onUserDataUpdate?: () => void;
 }
 
 function calculateLevelProgress(points: number, level: number): number {
@@ -34,18 +35,41 @@ function calculateLevelProgress(points: number, level: number): number {
 const StudentDashboard: React.FC<StudentDashboardProps> = ({
   user,
   setActiveTab,
+  onUserDataUpdate,
 }) => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [showWelcome, setShowWelcome] = useState(true);
+  const [userData, setUserData] = useState<UserData>(user);
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
   useEffect(() => {
-    api.getWorkouts().then(setWorkouts);
+    // Buscar dados atualizados do aluno (level, xp, streak)
+    api.getMemberData(user.id).then((memberData) => {
+      setUserData({
+        ...user,
+        level: memberData.level,
+        points: memberData.xp,
+        streak: memberData.currentStreak,
+      });
+      // Notificar o App.tsx para atualizar o user global
+      if (onUserDataUpdate) {
+        onUserDataUpdate();
+      }
+    }).catch((error) => {
+      console.error("[StudentDashboard] Erro ao buscar dados do membro:", error);
+      // Manter os dados do user original em caso de erro
+    });
+
+    // Buscar treinos específicos do aluno logado
+    api.getWorkouts(user.id).then(setWorkouts).catch((error) => {
+      console.error("[StudentDashboard] Erro ao buscar treinos:", error);
+      setWorkouts([]);
+    });
 
     const timer = setTimeout(() => setShowWelcome(false), 5000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [user.id]);
 
   const completedWorkouts = workouts.filter((w) =>
     w.exercises.every((e) => e.completed)
@@ -66,10 +90,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
       : 0;
 
   const levelProgress = calculateLevelProgress(
-    user.points || 0,
-    user.level || 1
+    userData.points || 0,
+    userData.level || 1
   );
-  const nextLevelPoints = (user.level || 1) * 50;
+  const nextLevelPoints = (userData.level || 1) * 50;
 
   const weekDays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
   const today = new Date().getDay();
@@ -100,11 +124,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
             <div>
               <p className={`${colors.textSecondary} text-xs`}>Olá,</p>
               <h1 className={`${colors.text} text-xl font-bold`}>
-                {user.name}
+                {userData.name}
               </h1>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-xs bg-lime-400/20 text-lime-400 px-2 py-0.5 rounded-full font-medium">
-                  Nível {user.level}
+                  Nível {userData.level || 1}
                 </span>
               </div>
             </div>
@@ -120,10 +144,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                 Nível
               </div>
               <div className="text-5xl font-black text-slate-900 mb-1">
-                {user.level}
+                {userData.level || 1}
               </div>
               <div className="text-slate-700 text-xs font-semibold">
-                {user.points} / {nextLevelPoints} XP
+                {userData.points || 0} / {nextLevelPoints} XP
               </div>
               <div className="w-full bg-lime-600 rounded-full h-1.5 mt-2">
                 <div
@@ -167,7 +191,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
             </div>
             <div className="flex items-center justify-center gap-1">
               <div className={`text-4xl font-black ${colors.text}`}>
-                {user.streak || 0}
+                {userData.streak || 0}
               </div>
               <Flame className="w-5 h-5 text-orange-400" />
             </div>

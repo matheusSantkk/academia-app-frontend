@@ -52,7 +52,16 @@ export class HttpClient {
     endpoint: string,
     params?: Record<string, string | number | boolean>
   ): string {
-    const url = new URL(endpoint, this.baseURL);
+    // Normalizar endpoint: remover barra inicial se existir
+    const normalizedEndpoint = endpoint.startsWith('/') ? endpoint.slice(1) : endpoint;
+    
+    // Garantir que baseURL termina com /
+    const base = this.baseURL.endsWith('/') ? this.baseURL : `${this.baseURL}/`;
+    
+    // Combinar baseURL + endpoint
+    const fullPath = `${base}${normalizedEndpoint}`;
+    
+    const url = new URL(fullPath);
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {

@@ -31,32 +31,118 @@ const StudentDetailScreen: React.FC<Props> = ({
   const colors = getThemeColors(theme);
 
   useEffect(() => {
-    const id = studentId || "s1";
-    api.getMedicalInfo(id).then((data) => setMedicalInfo(data));
-
-    api.getStudents().then((students) => {
-      const found = students.find((s) => s.id === id) || students[0];
-      setStudentName(found?.name ?? null);
-      setStudentAge(found?.age ?? null);
-      setStudentLevel(found?.level ?? null);
+    if (!studentId) {
       setLoading(false);
-    });
+      return;
+    }
+
+    const loadStudentData = async () => {
+      try {
+        setLoading(true);
+        
+        // Buscar dados do estudante primeiro
+        const students = await api.getStudents();
+        const found = students.find((s) => s.id === studentId);
+        
+        if (found) {
+          setStudentName(found.name);
+          setStudentAge(found.age);
+          setStudentLevel(found.level ?? 1);
+        }
+
+        // Buscar informações médicas
+        try {
+          const medicalData = await api.getMedicalInfo(studentId);
+          setMedicalInfo(medicalData);
+          
+          // Se não encontrou o estudante na lista, usar dados médicos
+          if (!found) {
+            setStudentName(medicalData.studentName);
+            setStudentAge(medicalData.age);
+          }
+        } catch (medicalError) {
+          console.error("Erro ao carregar informações médicas:", medicalError);
+          // Se não conseguir carregar dados médicos, criar um objeto mínimo
+          if (found) {
+            setMedicalInfo({
+              studentId: found.id,
+              studentName: found.name,
+              age: found.age,
+              weight: found.weight || 0,
+              height: found.height || 0,
+              bloodPressure: 'Não informado',
+              heartCondition: false,
+              injuries: [],
+              restrictions: [],
+              notes: 'Nenhuma informação médica disponível',
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao carregar dados do estudante:", error);
+        // Mostrar mensagem de erro ao usuário
+        setMedicalInfo({
+          studentId: studentId || '',
+          studentName: 'Erro ao carregar',
+          age: 0,
+          weight: 0,
+          height: 0,
+          bloodPressure: 'Não informado',
+          heartCondition: false,
+          injuries: [],
+          restrictions: [],
+          notes: 'Erro ao carregar dados do estudante',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStudentData();
   }, [studentId]);
 
-  if (loading || !medicalInfo) {
+  if (loading) {
     return (
       <div
         className={`min-h-screen ${colors.background} flex items-center justify-center`}
       >
-        <div className={colors.textSecondary}>Carregando...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-lime-400 border-t-transparent rounded-full animate-spin" />
+          <div className={colors.textSecondary}>Carregando dados do estudante...</div>
+        </div>
       </div>
     );
   }
 
-  const bmi = (
-    medicalInfo.weight /
-    (medicalInfo.height * medicalInfo.height)
-  ).toFixed(1);
+  if (!medicalInfo) {
+    return (
+      <div
+        className={`min-h-screen ${colors.background} flex items-center justify-center p-6`}
+      >
+        <div className={`${colors.card} border ${colors.border} rounded-xl p-6 text-center max-w-md`}>
+          <AlertCircle className={`w-12 h-12 ${colors.textSecondary} mx-auto mb-4`} />
+          <h2 className={`${colors.text} font-semibold text-lg mb-2`}>
+            Estudante não encontrado
+          </h2>
+          <p className={`${colors.textSecondary} text-sm mb-4`}>
+            Não foi possível carregar os dados do estudante.
+          </p>
+          {setActiveTab && (
+            <button
+              onClick={() => setActiveTab("students-list")}
+              className={`${colors.button} px-4 py-2 rounded-lg text-sm font-medium`}
+            >
+              Voltar para lista
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  const bmi = medicalInfo.weight > 0 && medicalInfo.height > 0
+    ? (medicalInfo.weight / (medicalInfo.height * medicalInfo.height)).toFixed(1)
+    : 'N/A';
 
   return (
     <div className={`min-h-screen ${colors.background} pb-24`}>
@@ -124,27 +210,22 @@ const StudentDetailScreen: React.FC<Props> = ({
               {editing && (
                 <button
                   onClick={async () => {
-                    if (!studentName) return;
+                    if (!studentName || !studentId) return;
                     setSaving(true);
                     try {
-                      await (
-                        api as unknown as {
-                          updateStudent: (
-                            id: string,
-                            patch: Partial<StudentData>
-                          ) => Promise<StudentData | null>;
-                        }
-                      ).updateStudent(studentId || "", {
-                        name: studentName,
-                        age: studentAge ?? undefined,
-                        level: studentLevel ?? undefined,
-                      });
+                      // Por enquanto, apenas atualizar localmente
+                      // TODO: Implementar endpoint de update no backend
+                      alert("Funcionalidade de edição será implementada em breve. Por enquanto, os dados são apenas exibidos.");
                       setEditing(false);
+                    } catch (error) {
+                      console.error("Erro ao salvar:", error);
+                      alert("Erro ao salvar alterações");
                     } finally {
                       setSaving(false);
                     }
                   }}
-                  className="px-3 py-1 rounded-md bg-green-600 text-white text-sm"
+                  className="px-3 py-1 rounded-md bg-green-600 text-white text-sm disabled:opacity-50"
+                  disabled={saving}
                 >
                   {saving ? "Salvando..." : "Salvar"}
                 </button>
@@ -179,14 +260,14 @@ const StudentDetailScreen: React.FC<Props> = ({
               <div>
                 <p className={`${colors.textSecondary} text-xs mb-1`}>Peso</p>
                 <p className={`${colors.text} font-semibold`}>
-                  {medicalInfo.weight} kg
+                  {medicalInfo.weight > 0 ? `${medicalInfo.weight} kg` : 'Não informado'}
                 </p>
               </div>
 
               <div>
                 <p className={`${colors.textSecondary} text-xs mb-1`}>Altura</p>
                 <p className={`${colors.text} font-semibold`}>
-                  {medicalInfo.height} m
+                  {medicalInfo.height > 0 ? `${medicalInfo.height} m` : 'Não informado'}
                 </p>
               </div>
 
@@ -200,7 +281,7 @@ const StudentDetailScreen: React.FC<Props> = ({
                   Pressão
                 </p>
                 <p className={`${colors.text} font-semibold`}>
-                  {medicalInfo.bloodPressure}
+                  {medicalInfo.bloodPressure || 'Não informado'}
                 </p>
               </div>
             </div>

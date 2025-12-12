@@ -6,6 +6,7 @@ import {
   mockRankingMonthly,
   mockRankingTotal,
   mockStudents as initialMockStudents,
+  mockMedicalInfo,
 } from "../data/MockData";
 import type {
   UserData,
@@ -42,12 +43,10 @@ export const calculateBonusXP = (
 };
 
 // --- Storage helpers ---
-const LOCAL_STUDENTS_KEY = "app_students_v2";
+const LOCAL_STUDENTS_KEY = "app_students_v1";
 const LOCAL_TRAININGS_KEY = "app_trainings_v1";
-const LOCAL_MEDICAL_INFO_KEY = "app_medical_info_v2";
 
 type TrainingsMap = Record<string, Workout[]>;
-type MedicalInfoMap = Record<string, StudentMedicalInfo>;
 
 const studentsStore = (() => {
   let students: StudentData[] = [];
@@ -90,17 +89,6 @@ const studentsStore = (() => {
         age: partial.age || 18,
         level: partial.level ?? 1,
         points: partial.points ?? 0,
-        weight: partial.weight,
-        height: partial.height,
-        gender: partial.gender,
-        phone: partial.phone,
-        birthDate: partial.birthDate,
-        emergencyContact: partial.emergencyContact,
-        emergencyPhone: partial.emergencyPhone,
-        goal: partial.goal,
-        experience: partial.experience,
-        frequency: partial.frequency,
-        healthNotes: partial.healthNotes,
       };
       students.push(newStudent);
       save();
@@ -153,45 +141,6 @@ const trainingsStore = (() => {
   } as const;
 })();
 
-const medicalInfoStore = (() => {
-  let map: MedicalInfoMap = {};
-
-  const load = () => {
-    try {
-      const raw = localStorage.getItem(LOCAL_MEDICAL_INFO_KEY);
-      if (raw) {
-        map = JSON.parse(raw) as MedicalInfoMap;
-        return;
-      }
-    } catch {
-      // ignore
-    }
-    map = {};
-    save();
-  };
-
-  const save = () => {
-    try {
-      localStorage.setItem(LOCAL_MEDICAL_INFO_KEY, JSON.stringify(map));
-    } catch {
-      // ignore
-    }
-  };
-
-  load();
-
-  return {
-    get: (studentId: string): StudentMedicalInfo | null => {
-      return map[studentId] || null;
-    },
-    set: (info: StudentMedicalInfo) => {
-      map[info.studentId] = info;
-      save();
-      return info;
-    },
-  };
-})();
-
 // --- Mock API Implementation ---
 const mockAPI = {
   login: async (email: string, _password: string): Promise<UserData> => {
@@ -206,13 +155,15 @@ const mockAPI = {
     });
   },
 
-  getWorkouts: async (): Promise<Workout[]> => {
+  getWorkouts: async (memberId?: string): Promise<Workout[]> => {
+    // No mock, retorna os treinos mockados independente do memberId
     return new Promise((resolve) =>
       setTimeout(() => resolve(mockWorkouts), 300)
     );
   },
 
-  getAchievements: async (): Promise<Achievement[]> => {
+  getAchievements: async (memberId?: string): Promise<Achievement[]> => {
+    // No mock, retorna os achievements mockados independente do memberId
     return new Promise((resolve) =>
       setTimeout(() => resolve(mockAchievements), 300)
     );
@@ -228,38 +179,39 @@ const mockAPI = {
     });
   },
 
+  getMemberData: async (memberId: string): Promise<{
+    id: string;
+    name: string;
+    email: string;
+    level: number;
+    xp: number;
+    currentStreak: number;
+  }> => {
+    // No mock, retorna dados do mockStudentUser
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          id: mockStudentUser.id,
+          name: mockStudentUser.name,
+          email: mockStudentUser.email,
+          level: mockStudentUser.level || 1,
+          xp: mockStudentUser.points || 0,
+          currentStreak: mockStudentUser.streak || 0,
+        });
+      }, 300);
+    });
+  },
+
   getStudents: async (): Promise<StudentData[]> => {
     return new Promise((resolve) =>
       setTimeout(() => resolve(studentsStore.list()), 300)
     );
   },
 
-  getMedicalInfo: async (studentId: string): Promise<StudentMedicalInfo> => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const info = medicalInfoStore.get(studentId);
-        if (info) {
-          resolve(info);
-        } else {
-          // Criar info médica padrão se não existir
-          const student = studentsStore.list().find((s) => s.id === studentId);
-          const defaultInfo: StudentMedicalInfo = {
-            studentId,
-            studentName: student?.name || "Aluno",
-            age: student?.age || 18,
-            weight: student?.weight || 70,
-            height: student?.height || 1.75,
-            bloodPressure: "120/80",
-            heartCondition: false,
-            injuries: [],
-            restrictions: [],
-            notes: student?.healthNotes || "",
-          };
-          medicalInfoStore.set(defaultInfo);
-          resolve(defaultInfo);
-        }
-      }, 300);
-    });
+  getMedicalInfo: async (_studentId: string): Promise<StudentMedicalInfo> => {
+    return new Promise((resolve) =>
+      setTimeout(() => resolve(mockMedicalInfo), 300)
+    );
   },
 
   createStudent: async (
@@ -268,24 +220,6 @@ const mockAPI = {
     return new Promise((resolve) => {
       setTimeout(() => {
         const newStudent = studentsStore.create(student);
-
-        // Criar informações médicas se tiver peso e altura
-        if (student.weight && student.height) {
-          const medicalInfo: StudentMedicalInfo = {
-            studentId: newStudent.id,
-            studentName: newStudent.name,
-            age: newStudent.age,
-            weight: student.weight,
-            height: student.height,
-            bloodPressure: "120/80",
-            heartCondition: false,
-            injuries: [],
-            restrictions: [],
-            notes: student.healthNotes || "",
-          };
-          medicalInfoStore.set(medicalInfo);
-        }
-
         resolve(newStudent);
       }, 400);
     });
@@ -293,41 +227,7 @@ const mockAPI = {
 
   updateStudent: async (id: string, patch: Partial<StudentData>) => {
     return new Promise<StudentData | null>((resolve) => {
-      setTimeout(() => {
-        const updated = studentsStore.update(id, patch);
-
-        // Atualizar informações médicas se necessário
-        if (updated && (patch.weight || patch.height || patch.healthNotes)) {
-          const medicalInfo = medicalInfoStore.get(id);
-          if (medicalInfo) {
-            medicalInfoStore.set({
-              ...medicalInfo,
-              weight: patch.weight ?? medicalInfo.weight,
-              height: patch.height ?? medicalInfo.height,
-              notes: patch.healthNotes ?? medicalInfo.notes,
-              studentName: patch.name ?? medicalInfo.studentName,
-              age: patch.age ?? medicalInfo.age,
-            });
-          } else if (patch.weight && patch.height) {
-            // Criar se não existir
-            const newMedicalInfo: StudentMedicalInfo = {
-              studentId: id,
-              studentName: updated.name,
-              age: updated.age,
-              weight: patch.weight,
-              height: patch.height,
-              bloodPressure: "120/80",
-              heartCondition: false,
-              injuries: [],
-              restrictions: [],
-              notes: patch.healthNotes || "",
-            };
-            medicalInfoStore.set(newMedicalInfo);
-          }
-        }
-
-        resolve(updated);
-      }, 300);
+      setTimeout(() => resolve(studentsStore.update(id, patch)), 300);
     });
   },
 
@@ -345,32 +245,142 @@ const mockAPI = {
       setTimeout(() => resolve(trainingsStore.set(studentId, workouts)), 400)
     );
   },
+
+  memberLogin: async (email: string, _password: string): Promise<UserData & { needsPasswordChange?: boolean }> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({
+          ...mockStudentUser,
+          needsPasswordChange: false, // No mock, não precisa trocar senha
+        });
+      }, 500);
+    });
+  },
+
+  changePassword: async (_newPassword: string): Promise<void> => {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(), 300);
+    });
+  },
 };
 
 // --- Server API Implementation ---
+// Para ativar, defina VITE_API_MODE=server no .env
 const serverAPI = {
   login: async (email: string, password: string): Promise<UserData> => {
-    const response = await httpClient.post<{ user: UserData; token: string }>(
+    // Garantir que email está normalizado
+    const normalizedEmail = email.trim().toLowerCase();
+    
+    console.log("[API] Tentando login:", { email: normalizedEmail });
+    
+    const response = await httpClient.post<{ 
+      accessToken: string; 
+      instructorId: string;
+      instructor: {
+        id: string;
+        name: string;
+        email: string;
+      };
+    }>(
       API_ENDPOINTS.AUTH.LOGIN,
-      { email, password }
+      { email: normalizedEmail, password: password.trim() }
     );
+    
+    console.log("[API] Login bem-sucedido:", response);
 
-    if (response.token) {
-      httpClient.setAuthToken(response.token);
-      localStorage.setItem("auth_token", response.token);
+    // Salva o token
+    if (response.accessToken) {
+      httpClient.setAuthToken(response.accessToken);
+      localStorage.setItem("auth_token", response.accessToken);
     }
 
-    return response.user;
+    // Converte a resposta do backend para o formato UserData esperado pelo frontend
+    return {
+      id: response.instructor.id,
+      name: response.instructor.name,
+      email: response.instructor.email,
+      role: "teacher",
+    };
   },
 
-  getWorkouts: async (): Promise<Workout[]> => {
+  memberLogin: async (email: string, password: string): Promise<UserData & { needsPasswordChange?: boolean }> => {
+    const normalizedEmail = email.trim().toLowerCase();
+    
+    console.log("[API] Tentando login de membro:", { email: normalizedEmail });
+    
+    const response = await httpClient.post<{ 
+      accessToken: string; 
+      memberId: string;
+      member: {
+        id: string;
+        name: string;
+        email: string;
+      };
+      needsPasswordChange: boolean;
+    }>(
+      API_ENDPOINTS.AUTH.MEMBER_LOGIN,
+      { email: normalizedEmail, password: password.trim() }
+    );
+    
+    console.log("[API] Login de membro bem-sucedido:", response);
+
+    // Salva o token
+    if (response.accessToken) {
+      httpClient.setAuthToken(response.accessToken);
+      localStorage.setItem("auth_token", response.accessToken);
+    }
+
+    // Converte a resposta do backend para o formato UserData esperado pelo frontend
+    return {
+      id: response.member.id,
+      name: response.member.name,
+      email: response.member.email,
+      role: "student",
+      needsPasswordChange: response.needsPasswordChange,
+    };
+  },
+
+  changePassword: async (newPassword: string): Promise<void> => {
+    await httpClient.post(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, {
+      newPassword: newPassword.trim(),
+    });
+  },
+
+  getWorkouts: async (memberId?: string): Promise<Workout[]> => {
+    if (memberId) {
+      // Buscar treinos específicos do aluno usando o endpoint de training
+      return httpClient.get<Workout[]>(API_ENDPOINTS.TRAINING.GET(memberId));
+    }
     return httpClient.get<Workout[]>(API_ENDPOINTS.WORKOUTS.LIST);
   },
 
-  getAchievements: async (): Promise<Achievement[]> => {
-    return httpClient.get<Achievement[]>(
-      API_ENDPOINTS.ACHIEVEMENTS.USER_ACHIEVEMENTS
-    );
+  getAchievements: async (memberId?: string): Promise<Achievement[]> => {
+    if (memberId) {
+      // Buscar achievements específicos do aluno
+      return httpClient.get<Achievement[]>(
+        API_ENDPOINTS.ACHIEVEMENTS.USER_ACHIEVEMENTS
+      );
+    }
+    return httpClient.get<Achievement[]>(API_ENDPOINTS.ACHIEVEMENTS.LIST);
+  },
+
+  getMemberData: async (memberId: string): Promise<{
+    id: string;
+    name: string;
+    email: string;
+    level: number;
+    xp: number;
+    currentStreak: number;
+  }> => {
+    const member = await httpClient.get<{
+      id: string;
+      name: string;
+      email: string;
+      level: number;
+      xp: number;
+      currentStreak: number;
+    }>(API_ENDPOINTS.MEMBERS.GET(memberId));
+    return member;
   },
 
   getRanking: async (type: "monthly" | "total"): Promise<RankingUser[]> => {
@@ -382,19 +392,93 @@ const serverAPI = {
   },
 
   getStudents: async (): Promise<StudentData[]> => {
-    return httpClient.get<StudentData[]>(API_ENDPOINTS.STUDENTS.LIST);
+    // Buscar membros do backend e converter para StudentData
+    const members = await httpClient.get<Array<{
+      id: string;
+      name: string;
+      email: string;
+      birthDate: string;
+      weight?: number;
+      height?: number;
+      gender?: string;
+      level: number;
+      xp: number;
+      currentStreak: number;
+    }>>(API_ENDPOINTS.MEMBERS.LIST);
+    
+    // Converter cada Member para StudentData
+    return members.map(member => {
+      const birthDate = new Date(member.birthDate);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      
+      return {
+        id: member.id,
+        name: member.name,
+        email: member.email,
+        role: "student",
+        age,
+        level: member.level,
+        points: member.xp,
+        streak: member.currentStreak,
+        weight: member.weight,
+        height: member.height,
+        gender: member.gender as "male" | "female" | "other" | undefined,
+      };
+    });
   },
 
   getMedicalInfo: async (studentId: string): Promise<StudentMedicalInfo> => {
     return httpClient.get<StudentMedicalInfo>(
-      API_ENDPOINTS.STUDENTS.MEDICAL_INFO(studentId)
+      API_ENDPOINTS.MEMBERS.GET(studentId) + "/medical"
     );
   },
 
   createStudent: async (
     student: Partial<StudentData>
   ): Promise<StudentData> => {
-    return httpClient.post<StudentData>(API_ENDPOINTS.STUDENTS.CREATE, student);
+    // O backend retorna um Member, precisamos converter para StudentData
+    const member = await httpClient.post<{
+      id: string;
+      name: string;
+      email: string;
+      birthDate: string;
+      phone: string;
+      weight?: number;
+      height?: number;
+      gender?: string;
+      level: number;
+      xp: number;
+      currentStreak: number;
+    }>(API_ENDPOINTS.MEMBERS.CREATE, student);
+    
+    // Calcular idade a partir da data de nascimento
+    const birthDate = new Date(member.birthDate);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    
+    // Converter Member para StudentData
+    return {
+      id: member.id,
+      name: member.name,
+      email: member.email,
+      role: "student",
+      age: age,
+      level: member.level,
+      points: member.xp,
+      streak: member.currentStreak,
+      weight: member.weight,
+      height: member.height,
+      gender: member.gender as "male" | "female" | "other" | undefined,
+    };
   },
 
   updateStudent: async (
@@ -415,8 +499,29 @@ const serverAPI = {
     studentId: string,
     workouts: Workout[]
   ): Promise<Workout[]> => {
-    return httpClient.post<Workout[]>(API_ENDPOINTS.TRAINING.SAVE(studentId), {
-      workouts,
+    return httpClient.post<Workout[]>(API_ENDPOINTS.TRAINING.SAVE(studentId), workouts);
+  },
+
+  completeWorkout: async (workoutId: string, memberId?: string): Promise<{
+    id: string;
+    xpEarned: number;
+    member: {
+      id: string;
+      xp: number;
+      level: number;
+    };
+  }> => {
+    return httpClient.post<{
+      id: string;
+      xpEarned: number;
+      member: {
+        id: string;
+        xp: number;
+        level: number;
+      };
+    }>(API_ENDPOINTS.WORKOUT_HISTORY.COMPLETE_WORKOUT, {
+      workoutId,
+      ...(memberId && { memberId }),
     });
   },
 };

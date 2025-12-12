@@ -16,6 +16,8 @@ export const API_ENDPOINTS = {
   // Auth
   AUTH: {
     LOGIN: "/auth/login",
+    MEMBER_LOGIN: "/auth/member/login",
+    CHANGE_PASSWORD: "/auth/member/change-password",
     LOGOUT: "/auth/logout",
     REFRESH: "/auth/refresh",
     REGISTER: "/auth/register",
@@ -38,6 +40,15 @@ export const API_ENDPOINTS = {
     MEDICAL_INFO: (id: string) => `/students/${id}/medical`,
   },
 
+  // Members (backend endpoint)
+  MEMBERS: {
+    LIST: "/members",
+    GET: (id: string) => `/members/${id}`,
+    CREATE: "/members",
+    UPDATE: (id: string) => `/members/${id}`,
+    DELETE: (id: string) => `/members/${id}`,
+  },
+
   // Workouts
   WORKOUTS: {
     LIST: "/workouts",
@@ -52,8 +63,8 @@ export const API_ENDPOINTS = {
 
   // Training Plans
   TRAINING: {
-    GET: (studentId: string) => `/training/${studentId}`,
-    SAVE: (studentId: string) => `/training/${studentId}`,
+    GET: (studentId: string) => `/workouts/training/${studentId}`,
+    SAVE: (studentId: string) => `/workouts/training/${studentId}`,
   },
 
   // Achievements
@@ -62,10 +73,17 @@ export const API_ENDPOINTS = {
     USER_ACHIEVEMENTS: "/achievements/user",
   },
 
+  // Workout History
+  WORKOUT_HISTORY: {
+    CREATE: "/workout-history",
+    BY_MEMBER: (memberId: string) => `/workout-history/member/${memberId}`,
+    COMPLETE_WORKOUT: "/workout-history/complete",
+  },
+
   // Ranking
   RANKING: {
-    MONTHLY: "/ranking/monthly",
-    TOTAL: "/ranking/total",
+    MONTHLY: "/members/ranking/monthly",
+    TOTAL: "/members/ranking/total",
   },
 
   // Preferences

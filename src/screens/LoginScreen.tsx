@@ -1,10 +1,16 @@
-import { useState } from "react";
-import { Dumbbell, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Dumbbell, Eye, EyeOff, AlertCircle, Wifi, WifiOff } from "lucide-react";
 import type { UserData } from "../types";
 import { api } from "../api";
+import { APIError, handleAPIError } from "../api/client";
+import { isMockMode, API_CONFIG } from "../api/config";
 
-const LoginScreen: React.FC<{ onLogin: (user: UserData) => void }> = ({
+const LoginScreen: React.FC<{ 
+  onLogin: (user: UserData) => void;
+  userType?: "student" | "teacher";
+}> = ({
   onLogin,
+  userType,
 }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -12,6 +18,8 @@ const LoginScreen: React.FC<{ onLogin: (user: UserData) => void }> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [touched, setTouched] = useState({ email: false, password: false });
+  const [serverStatus, setServerStatus] = useState<"checking" | "online" | "offline" | null>(null);
+  const [isServerMode, setIsServerMode] = useState(false);
 
   const validateEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -19,6 +27,33 @@ const LoginScreen: React.FC<{ onLogin: (user: UserData) => void }> = ({
 
   const emailError = touched.email && email && !validateEmail(email);
   const passwordError = touched.password && password.length < 1;
+
+  // Verificar modo e status do servidor
+  useEffect(() => {
+    const checkServerMode = () => {
+      const mode = !isMockMode();
+      setIsServerMode(mode);
+      
+      if (mode) {
+        setServerStatus("checking");
+        // Tentar fazer uma requisição simples para verificar se o servidor está online
+        fetch(`${API_CONFIG.BASE_URL}/instructors`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        })
+          .then(() => {
+            setServerStatus("online");
+          })
+          .catch(() => {
+            setServerStatus("offline");
+          });
+      } else {
+        setServerStatus(null);
+      }
+    };
+
+    checkServerMode();
+  }, []);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -36,20 +71,91 @@ const LoginScreen: React.FC<{ onLogin: (user: UserData) => void }> = ({
     setError("");
 
     try {
-      const user = await api.login(email, password);
+      // Verificar se está em modo server e se o servidor está offline
+      if (isServerMode && serverStatus === "offline") {
+        setError("Servidor offline. Verifique se o backend está rodando.");
+        setLoading(false);
+        return;
+      }
+
+      // Normalizar email (trim e lowercase)
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedPassword = password.trim();
+
+      console.log("Tentando login com email:", normalizedEmail, "Tipo:", userType || "auto");
+
+      let user: UserData & { needsPasswordChange?: boolean };
+      
+      // Se userType não foi especificado, tentar detectar automaticamente
+      // ou tentar primeiro como professor, depois como aluno
+      if (!userType) {
+        try {
+          // Tentar primeiro como professor
+          user = await api.login(normalizedEmail, normalizedPassword);
+          if (user.role !== "teacher") {
+            throw new Error("Não é professor");
+          }
+        } catch (error) {
+          // Se falhar, tentar como aluno
+          console.log("Tentando login como aluno...");
+          const memberApi = api as typeof api & {
+            memberLogin: (email: string, password: string) => Promise<UserData & { needsPasswordChange?: boolean }>;
+          };
+          user = await memberApi.memberLogin(normalizedEmail, normalizedPassword);
+        }
+      } else if (userType === "teacher") {
+        user = await api.login(normalizedEmail, normalizedPassword);
+      } else {
+        const memberApi = api as typeof api & {
+          memberLogin: (email: string, password: string) => Promise<UserData & { needsPasswordChange?: boolean }>;
+        };
+        user = await memberApi.memberLogin(normalizedEmail, normalizedPassword);
+      }
+      
+      // Verificar se o login retornou um usuário válido
+      if (!user || !user.id) {
+        setError("Resposta inválida do servidor. Tente novamente.");
+        setLoading(false);
+        return;
+      }
+
+      // Login bem-sucedido
       onLogin(user);
-    } catch {
-      setError("Erro ao fazer login. Tente novamente.");
+    } catch (error) {
+      let errorMessage = "Erro ao fazer login. Tente novamente.";
+      
+      if (error instanceof APIError) {
+        if (error.statusCode === 401) {
+          errorMessage = "Email ou senha incorretos. Verifique suas credenciais.";
+        } else if (error.statusCode === 404) {
+          errorMessage = "Instrutor não encontrado. Verifique se o email está correto ou se o cadastro foi realizado.";
+        } else if (error.statusCode === 0) {
+          errorMessage = "Erro de conexão. Verifique se o servidor está rodando em " + API_CONFIG.BASE_URL;
+        } else if (error.statusCode === 422) {
+          errorMessage = "Dados inválidos. Verifique o formato do email.";
+        } else {
+          errorMessage = error.message || errorMessage;
+        }
+      } else {
+        errorMessage = handleAPIError(error);
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
   const handleQuickLogin = (userType: "student" | "teacher") => {
-    const quickEmail =
-      userType === "teacher" ? "professor@academia.com" : "aluno@email.com";
-    setEmail(quickEmail);
-    setPassword("senha123");
+    if (userType === "teacher") {
+      setEmail("professor@academia.com");
+      setPassword("senha123");
+    } else {
+      // Para aluno, não podemos preencher automaticamente pois precisa do email e telefone do aluno cadastrado
+      setEmail("");
+      setPassword("");
+      setError("Para login de aluno, use o email cadastrado e a senha padrão: 123");
+    }
   };
 
   return (
@@ -62,6 +168,35 @@ const LoginScreen: React.FC<{ onLogin: (user: UserData) => void }> = ({
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">FitTrack</h1>
           <p className="text-slate-400">Seu treino, seu progresso</p>
+          
+          {/* Indicador de Status do Servidor */}
+          {isServerMode && serverStatus !== null && (
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm">
+              {serverStatus === "checking" && (
+                <>
+                  <div className="w-3 h-3 border-2 border-slate-400 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-slate-400">Verificando conexão...</span>
+                </>
+              )}
+              {serverStatus === "online" && (
+                <>
+                  <Wifi size={16} className="text-lime-400" />
+                  <span className="text-lime-400">Conectado ao servidor</span>
+                </>
+              )}
+              {serverStatus === "offline" && (
+                <>
+                  <WifiOff size={16} className="text-red-400" />
+                  <span className="text-red-400">Servidor offline</span>
+                </>
+              )}
+            </div>
+          )}
+          {!isServerMode && (
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-slate-500">
+              <span>Modo de desenvolvimento (Mock)</span>
+            </div>
+          )}
         </div>
 
         {/* Form */}
@@ -182,10 +317,23 @@ const LoginScreen: React.FC<{ onLogin: (user: UserData) => void }> = ({
         </div>
 
         {/* Footer Info */}
-        <div className="mt-8 text-center">
+        <div className="mt-8 text-center space-y-2">
           <p className="text-slate-500 text-xs">
-            Use as contas de teste acima ou qualquer email válido
+            {isServerMode 
+              ? "Faça login com suas credenciais cadastradas no sistema"
+              : "Use as contas de teste acima ou qualquer email válido"
+            }
           </p>
+          {isServerMode && (
+            <div className="space-y-1">
+              <p className="text-slate-600 text-xs">
+                <strong>Professor:</strong> Email e senha cadastrados
+              </p>
+              <p className="text-slate-600 text-xs">
+                <strong>Aluno:</strong> Email cadastrado e senha padrão: 123
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

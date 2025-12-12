@@ -1,3 +1,11 @@
+export interface StudentData extends UserData {
+  age: number;
+  weight?: number;
+  height?: number;
+  gender?: "male" | "female" | "other";
+  healthNotes?: string;
+}
+
 export interface UserData {
   id: string;
   name: string;
@@ -7,23 +15,7 @@ export interface UserData {
   points?: number;
   streak?: number;
   avatar?: string;
-}
-
-export interface StudentData extends UserData {
-  age: number;
-  weight?: number;
-  height?: number;
-  gender?: "male" | "female" | "other";
-  healthNotes?: string;
-
-  // PROPRIEDADES ADICIONADAS PARA RESOLVER OS ERROS DE COMPILAÇÃO:
-  phone?: string;
-  birthDate?: string;
-  emergencyContact?: string;
-  emergencyPhone?: string;
-  goal?: string;
-  experience?: string;
-  frequency?: string;
+  needsPasswordChange?: boolean;
 }
 
 export interface Exercise {
@@ -73,4 +65,8 @@ export interface StudentMedicalInfo {
   injuries: string[];
   restrictions: string[];
   notes: string;
+}
+
+export interface StudentData extends UserData {
+  age: number;
 }

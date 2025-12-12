@@ -31,10 +31,16 @@ export default function StudentsListScreen({
 
   useEffect(() => {
     setLoading(true);
-    api.getStudents().then((list) => {
-      setStudents(list);
-      setLoading(false);
-    });
+    api.getStudents()
+      .then((list) => {
+        setStudents(list);
+        setLoading(false);
+      })
+      .catch((error) => {
+        console.error("[StudentsListScreen] Erro ao buscar alunos:", error);
+        setStudents([]);
+        setLoading(false);
+      });
   }, []);
 
   const filtered = students.filter((s) =>

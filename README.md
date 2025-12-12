@@ -1,373 +1,230 @@
-# 🔌 Guia de Integração com Backend Node.js
+# 💪 Academia App - Frontend
 
-Este guia explica como integrar o frontend com um backend Node.js.
+Aplicativo web moderno para gestão de academia, desenvolvido com React, TypeScript e Vite. O sistema oferece interfaces diferenciadas para professores e alunos, com funcionalidades completas de gerenciamento de treinos, conquistas, ranking e muito mais.
 
-## 📋 Pré-requisitos
+## 📋 Índice
 
-- Backend Node.js rodando
-- Endpoints da API implementados
-- Sistema de autenticação JWT (recomendado)
+- [Sobre o Projeto](#-sobre-o-projeto)
+- [Tecnologias](#-tecnologias)
+- [Funcionalidades](#-funcionalidades)
+- [Pré-requisitos](#-pré-requisitos)
+- [Instalação](#-instalação)
+- [Configuração](#-configuração)
+- [Scripts Disponíveis](#-scripts-disponíveis)
+- [Estrutura do Projeto](#-estrutura-do-projeto)
+- [Integração com Backend](#-integração-com-backend)
+- [Membros do Grupo](#-membros-do-grupo)
+- [Contribuindo](#-contribuindo)
+- [Licença](#-licença)
+
+## 🎯 Sobre o Projeto
+
+O **M** é uma solução completa para gestão de academias, permitindo que professores gerenciem alunos e treinos, enquanto os alunos acompanham seu progresso, completam treinos, desbloqueiam conquistas e competem em rankings.
+
+### Principais Características
+
+- 🔐 **Sistema de Autenticação**: Login separado para professores e alunos
+- 👨‍🏫 **Dashboard do Professor**: Gerenciamento completo de alunos e treinos
+- 👨‍🎓 **Dashboard do Aluno**: Acompanhamento de progresso e treinos
+- 🏋️ **Sistema de Treinos**: Criação e acompanhamento de treinos personalizados
+- 🏆 **Conquistas**: Sistema de gamificação com conquistas desbloqueáveis
+- 📊 **Ranking**: Rankings mensais e totais para motivar os alunos
+- 🎨 **Interface Moderna**: Design responsivo com Tailwind CSS
+- 🌙 **Tema Escuro**: Suporte a tema escuro (preparado para implementação)
+
+## 🛠️ Tecnologias
+
+### Core
+- **[React](https://react.dev/)** 19.2.0 - Biblioteca JavaScript para construção de interfaces
+- **[TypeScript](https://www.typescriptlang.org/)** 5.9.3 - Superset JavaScript com tipagem estática
+- **[Vite](https://vitejs.dev/)** 7.2.4 - Build tool e dev server ultra-rápido
+
+### Estilização
+- **[Tailwind CSS](https://tailwindcss.com/)** 4.1.17 - Framework CSS utility-first
+- **[Lucide React](https://lucide.dev/)** 0.556.0 - Biblioteca de ícones
+
+### Ferramentas de Desenvolvimento
+- **[ESLint](https://eslint.org/)** 9.39.1 - Linter para JavaScript/TypeScript
+- **[TypeScript ESLint](https://typescript-eslint.io/)** 8.46.4 - Linter específico para TypeScript
+
+## ✨ Funcionalidades
+
+### Para Professores 👨‍🏫
+
+- ✅ Dashboard com visão geral dos alunos
+- ✅ Listagem e busca de alunos
+- ✅ Criação de novos alunos
+- ✅ Visualização detalhada de cada aluno
+- ✅ Criação e edição de planos de treino
+- ✅ Visualização de informações médicas dos alunos
+- ✅ Acompanhamento de progresso dos alunos
+- ✅ Visualização de rankings
+
+### Para Alunos 👨‍🎓
+
+- ✅ Dashboard personalizado com estatísticas
+- ✅ Visualização de treinos atribuídos
+- ✅ Marcação de exercícios como completos
+- ✅ Sistema de XP e níveis
+- ✅ Streak de treinos consecutivos
+- ✅ Visualização de conquistas desbloqueadas
+- ✅ Rankings mensais e totais
+- ✅ Configurações de perfil
+- ✅ Troca de senha no primeiro acesso
+
+## 📦 Pré-requisitos
+
+Antes de começar, certifique-se de ter instalado:
+
+- **[Node.js](https://nodejs.org/)** (versão 18 ou superior)
+- **[npm](https://www.npmjs.com/)** ou **[yarn](https://yarnpkg.com/)** ou **[pnpm](https://pnpm.io/)**
+
+## 🚀 Instalação
+
+1. **Clone o repositório**
+   ```bash
+   git clone https://github.com/seu-usuario/academia-app-frontend.git
+   cd academia-app-frontend
+   ```
+
+2. **Instale as dependências**
+   ```bash
+   npm install
+   # ou
+   yarn install
+   # ou
+   pnpm install
+   ```
+
+3. **Configure as variáveis de ambiente**
+   
+   Crie um arquivo `.env` na raiz do projeto:
+   ```env
+   # Modo da API (mock ou server)
+   VITE_API_MODE=mock
+   
+   # URL do backend (apenas se VITE_API_MODE=server)
+   VITE_API_URL=http://localhost:3000/api
+   ```
+
+4. **Inicie o servidor de desenvolvimento**
+   ```bash
+   npm run dev
+   # ou
+   yarn dev
+   # ou
+   pnpm dev
+   ```
+
+5. **Acesse a aplicação**
+   
+   Abra seu navegador em `http://localhost:5173` (ou a porta indicada no terminal)
 
 ## ⚙️ Configuração
 
-### 1. Variáveis de Ambiente
+### Modos de Operação
 
-Crie um arquivo `.env` na raiz do projeto:
+O aplicativo suporta dois modos de operação:
 
-```bash
-# Ativar modo servidor
-VITE_API_MODE=server
-
-# URL do seu backend
-VITE_API_URL=http://localhost:3000/api
-```
-
-### 2. Estrutura de Endpoints Esperada
-
-O frontend espera os seguintes endpoints no backend:
-
-#### **Autenticação**
-```
-POST /api/auth/login
-Body: { email: string, password: string }
-Response: { user: UserData, token: string }
-
-POST /api/auth/logout
-Headers: Authorization: Bearer {token}
-
-POST /api/auth/refresh
-Body: { refreshToken: string }
-Response: { token: string }
-```
-
-#### **Usuários**
-```
-GET /api/users/me
-Headers: Authorization: Bearer {token}
-Response: UserData
-
-PATCH /api/users/:id
-Headers: Authorization: Bearer {token}
-Body: Partial<UserData>
-Response: UserData
-```
-
-#### **Alunos**
-```
-GET /api/students
-Headers: Authorization: Bearer {token}
-Response: StudentData[]
-
-GET /api/students/:id
-Headers: Authorization: Bearer {token}
-Response: StudentData
-
-POST /api/students
-Headers: Authorization: Bearer {token}
-Body: Partial<StudentData>
-Response: StudentData
-
-PATCH /api/students/:id
-Headers: Authorization: Bearer {token}
-Body: Partial<StudentData>
-Response: StudentData
-
-GET /api/students/:id/medical
-Headers: Authorization: Bearer {token}
-Response: StudentMedicalInfo
-```
-
-#### **Treinos**
-```
-GET /api/workouts
-Headers: Authorization: Bearer {token}
-Response: Workout[]
-
-GET /api/workouts/student/:studentId
-Headers: Authorization: Bearer {token}
-Response: Workout[]
-
-POST /api/workouts
-Headers: Authorization: Bearer {token}
-Body: Workout
-Response: Workout
-
-PATCH /api/workouts/:id
-Headers: Authorization: Bearer {token}
-Body: Partial<Workout>
-Response: Workout
-```
-
-#### **Planos de Treino**
-```
-GET /api/training/:studentId
-Headers: Authorization: Bearer {token}
-Response: Workout[]
-
-POST /api/training/:studentId
-Headers: Authorization: Bearer {token}
-Body: { workouts: Workout[] }
-Response: Workout[]
-```
-
-#### **Conquistas**
-```
-GET /api/achievements/user
-Headers: Authorization: Bearer {token}
-Response: Achievement[]
-```
-
-#### **Ranking**
-```
-GET /api/ranking/monthly
-Headers: Authorization: Bearer {token}
-Response: RankingUser[]
-
-GET /api/ranking/total
-Headers: Authorization: Bearer {token}
-Response: RankingUser[]
-```
-
-#### **Preferências**
-```
-GET /api/preferences
-Headers: Authorization: Bearer {token}
-Response: UserPreferences
-
-PUT /api/preferences
-Headers: Authorization: Bearer {token}
-Body: UserPreferences
-Response: UserPreferences
-```
-
-### 3. Tipos TypeScript
-
-Os tipos estão definidos em `src/types/index.ts`:
-
-```typescript
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  role: "student" | "teacher";
-  level?: number;
-  points?: number;
-  streak?: number;
-  avatar?: string;
-}
-
-interface StudentData extends UserData {
-  age: number;
-}
-
-interface Workout {
-  id: string;
-  type: "A" | "B" | "C";
-  name: string;
-  exercises: Exercise[];
-  completedAt?: string;
-}
-
-interface Exercise {
-  id: string;
-  name: string;
-  series: number;
-  reps: string;
-  weight: number;
-  rest: string;
-  completed: boolean;
-  isPR?: boolean;
-}
-
-// ... outros tipos
-```
-
-### 4. Autenticação JWT
-
-O cliente HTTP já está preparado para JWT:
-
-```typescript
-// Após login bem-sucedido, o token é salvo automaticamente
-const response = await api.login(email, password);
-// Token é armazenado em localStorage e adicionado aos headers
-
-// Para fazer logout
-import { logout } from './api';
-logout(); // Remove token do localStorage e headers
-```
-
-### 5. Tratamento de Erros
-
-O sistema já trata erros automaticamente:
-
-```typescript
-try {
-  const students = await api.getStudents();
-} catch (error) {
-  // Erros são lançados como APIError
-  if (error instanceof APIError) {
-    console.error(error.statusCode, error.message);
-  }
-}
-```
-
-## 🔄 Modo de Desenvolvimento
-
-### Usando Mock (Padrão)
-
-```bash
-# .env
+#### Modo Mock (Desenvolvimento)
+```env
 VITE_API_MODE=mock
 ```
+- Usa dados mockados armazenados no localStorage
+- Ideal para desenvolvimento sem backend
+- Permite desenvolvimento e testes rápidos
 
-Benefícios:
-- ✅ Desenvolvimento sem backend
-- ✅ Dados persistidos em localStorage
-- ✅ Testes rápidos
-
-### Usando Servidor Real
-
-```bash
-# .env
+#### Modo Servidor (Produção)
+```env
 VITE_API_MODE=server
 VITE_API_URL=http://localhost:3000/api
 ```
+- Conecta-se a um backend real
+- Requer backend Node.js rodando
+- Veja a seção [Integração com Backend](#-integração-com-backend) para mais detalhes
 
-Benefícios:
-- ✅ Teste com dados reais
-- ✅ Validação de integração
-- ✅ Debug de problemas
+## 📜 Scripts Disponíveis
 
-## 🛠️ Exemplo de Backend Node.js
+```bash
+# Inicia o servidor de desenvolvimento
+npm run dev
 
-### Estrutura Básica
+# Cria build de produção
+npm run build
 
-```javascript
-// server.js
-const express = require('express');
-const cors = require('cors');
-const app = express();
+# Visualiza o build de produção localmente
+npm run preview
 
-app.use(cors());
-app.use(express.json());
-
-// Rotas
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/students', require('./routes/students'));
-app.use('/api/workouts', require('./routes/workouts'));
-// ... outras rotas
-
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
-});
+# Executa o linter
+npm run lint
 ```
 
-### Exemplo de Rota (Login)
+## 📁 Estrutura do Projeto
 
-```javascript
-// routes/auth.js
-const express = require('express');
-const jwt = require('jsonwebtoken');
-const router = express.Router();
-
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  
-  // Validar credenciais (exemplo simplificado)
-  const user = await User.findOne({ email });
-  if (!user || !user.validatePassword(password)) {
-    return res.status(401).json({ message: 'Credenciais inválidas' });
-  }
-  
-  // Gerar token
-  const token = jwt.sign(
-    { id: user.id, role: user.role },
-    process.env.JWT_SECRET,
-    { expiresIn: '7d' }
-  );
-  
-  res.json({
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-    },
-    token,
-  });
-});
-
-module.exports = router;
+```
+academia-app-frontend/
+├── public/                 # Arquivos estáticos públicos
+├── src/
+│   ├── api/               # Configuração e cliente da API
+│   │   ├── client.ts     # Cliente HTTP
+│   │   ├── config.ts     # Configurações e endpoints
+│   │   └── index.ts      # Exportações da API
+│   ├── components/        # Componentes React
+│   │   ├── common/       # Componentes compartilhados
+│   │   ├── student/      # Componentes do aluno
+│   │   └── teacher/      # Componentes do professor
+│   ├── data/             # Dados mockados
+│   ├── screens/          # Telas principais
+│   ├── styles/           # Estilos globais
+│   ├── theme/            # Sistema de temas
+│   ├── types/            # Definições TypeScript
+│   ├── App.tsx           # Componente principal
+│   └── main.tsx          # Ponto de entrada
+├── .gitignore            # Arquivos ignorados pelo Git
+├── index.html            # HTML principal
+├── package.json          # Dependências e scripts
+├── tsconfig.json         # Configuração TypeScript
+├── vite.config.ts        # Configuração Vite
+└── README.md             # Este arquivo
 ```
 
-### Middleware de Autenticação
+## 🔌 Integração com Backend
 
-```javascript
-// middleware/auth.js
-const jwt = require('jsonwebtoken');
+O frontend está preparado para se integrar com um backend Node.js. Para mais detalhes sobre a integração, endpoints esperados e exemplos de implementação, consulte o arquivo de documentação de integração (se disponível) ou a seção de API em `src/api/config.ts`.
 
-const authMiddleware = (req, res, next) => {
-  const token = req.headers.authorization?.split(' ')[1];
-  
-  if (!token) {
-    return res.status(401).json({ message: 'Token não fornecido' });
-  }
-  
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(401).json({ message: 'Token inválido' });
-  }
-};
+### Endpoints Principais
 
-module.exports = authMiddleware;
-```
+- **Autenticação**: `/api/auth/login`, `/api/auth/logout`
+- **Usuários**: `/api/users/me`
+- **Alunos**: `/api/students`, `/api/students/:id`
+- **Treinos**: `/api/workouts`, `/api/workouts/student/:studentId`
+- **Conquistas**: `/api/achievements/user`
+- **Ranking**: `/api/members/ranking/monthly`, `/api/members/ranking/total`
 
-## 🎯 Checklist de Integração
+Para informações detalhadas sobre a estrutura de dados e exemplos de requisições, consulte os tipos definidos em `src/types/index.ts`.
 
-- [ ] Backend Node.js rodando
-- [ ] Endpoints implementados conforme documentação
-- [ ] CORS configurado
-- [ ] JWT implementado
-- [ ] Variáveis de ambiente configuradas
-- [ ] `.env` criado com `VITE_API_MODE=server`
-- [ ] Testes de integração realizados
-- [ ] Tratamento de erros verificado
-- [ ] Performance otimizada
+## 🤝 Contribuindo
 
-## 📚 Recursos Adicionais
+Contribuições são bem-vindas! Para contribuir com o projeto:
 
-- **Documentação da API**: Configure Swagger/OpenAPI no backend
-- **Testes**: Use Jest para testes unitários
-- **Monitoramento**: Configure logs e analytics
-- **Deploy**: Configure CI/CD para produção
+1. Faça um fork do projeto
+2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
+3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
+4. Push para a branch (`git push origin feature/AmazingFeature`)
+5. Abra um Pull Request
 
-## 🐛 Troubleshooting
+### Padrões de Código
 
-### Erro: "Erro de conexão"
-- Verifique se o backend está rodando
-- Confirme a URL no `.env`
-- Verifique CORS no backend
+- Use TypeScript para todo o código
+- Siga as convenções do ESLint configuradas
+- Mantenha os componentes pequenos e focados
+- Adicione comentários quando necessário
+- Use nomes descritivos para variáveis e funções
 
-### Erro: "Token inválido"
-- Limpe o localStorage
-- Faça login novamente
-- Verifique o SECRET do JWT
+## 📄 Licença
 
-### Erro: "404 Not Found"
-- Confirme que as rotas no backend estão corretas
-- Verifique os endpoints em `src/api/config.ts`
-
-## 💡 Dicas
-
-1. **Desenvolvimento**: Use modo mock para desenvolvimento rápido
-2. **Staging**: Use servidor de testes antes de produção
-3. **Produção**: Configure variáveis de ambiente apropriadas
-4. **Logs**: Ative logs detalhados em desenvolvimento
-5. **Cache**: Implemente cache onde apropriado
+Este projeto está sob a licença especificada no arquivo `LICENSE`.
 
 ---
 
-Para mais informações, consulte a documentação do código em `src/api/`.
+Desenvolvido com ❤️ para facilitar a gestão de academias

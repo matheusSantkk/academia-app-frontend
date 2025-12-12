@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { ArrowLeft, User, Heart, FileText, Check } from "lucide-react";
 import { api } from "../../api";
-import type { StudentData } from "../../types";
 import { useTheme } from "../../theme/context";
 import { getThemeColors } from "../../theme/colors";
+import { APIError, handleAPIError } from "../../api/client";
 
 interface Props {
   setActiveTab: (tab: string) => void;
@@ -31,6 +31,7 @@ export default function CreateStudentScreen({
   const [height, setHeight] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [emergencyEmail, setEmergencyEmail] = useState("");
 
   // Step 3 - Objetivos e Saúde
   const [goal, setGoal] = useState("");
@@ -59,27 +60,126 @@ export default function CreateStudentScreen({
   };
 
   const handleSubmit = async () => {
+    // Validação dos campos obrigatórios
+    if (!name.trim()) {
+      alert("Por favor, preencha o nome completo");
+      return;
+    }
+
+    if (!birthDate) {
+      alert("Por favor, preencha a data de nascimento");
+      return;
+    }
+
+    if (!phone.trim()) {
+      alert("Por favor, preencha o telefone");
+      return;
+    }
+
+    if (!email.trim()) {
+      alert("Por favor, preencha o e-mail");
+      return;
+    }
+
+    if (!emergencyPhone.trim()) {
+      alert("Por favor, preencha o telefone de emergência");
+      return;
+    }
+
+    if (!emergencyEmail.trim()) {
+      alert("Por favor, preencha o e-mail de emergência");
+      return;
+    }
+
+    if (!weight || !height) {
+      alert("Por favor, preencha peso e altura");
+      return;
+    }
+
     if (!goal || !experience || !frequency) {
-      alert("Por favor, preencha todos os campos obrigatórios");
+      alert("Por favor, preencha todos os campos obrigatórios (objetivo, experiência e frequência)");
       return;
     }
 
     setSubmitting(true);
     try {
-      const age = calcAgeFromBirth(birthDate) || 18;
-      const created = await api.createStudent({
-        name,
-        email,
-        age,
-        weight: Number(weight) || undefined,
-        height: Number(height) || undefined,
-        gender,
-        healthNotes: healthNotes.trim() || undefined,
-        level: mapGoalToLevel(goal),
-      } as Partial<StudentData>);
+      // Preparar dados para o backend no formato esperado pelo CreateMemberDto
+      const memberData: any = {
+        name: name.trim(),
+        birthDate, // Formato YYYY-MM-DD
+        phone: phone.trim(),
+        email: email.trim(),
+        emergencyPhone: emergencyPhone.trim(),
+        emergencyEmail: emergencyEmail.trim(),
+      };
 
-      setSelectedStudentId(created.id);
-      setActiveTab("student-detail");
+      // Adicionar campos opcionais apenas se tiverem valores
+      if (weight && Number(weight) > 0) {
+        memberData.weight = Number(weight);
+      }
+      if (height && Number(height) > 0) {
+        memberData.height = Number(height);
+      }
+      if (gender) {
+        memberData.gender = gender;
+      }
+
+      // Campos da anamnese
+      if (goal) {
+        memberData.mainGoal = goal;
+      }
+      if (experience) {
+        memberData.experienceLevel = experience;
+      }
+      if (frequency) {
+        memberData.weeklyFrequency = frequency;
+      }
+      if (healthNotes.trim()) {
+        memberData.healthNotes = healthNotes.trim();
+      }
+
+      console.log("Enviando dados do aluno:", memberData);
+
+      const created = await api.createStudent(memberData);
+
+      console.log("Aluno cadastrado com sucesso:", created);
+
+      // O backend retorna um Member completo, então usamos o id diretamente
+      if (created && created.id) {
+        setSelectedStudentId(created.id);
+        setActiveTab("student-detail");
+      } else {
+        throw new Error("Resposta inválida do servidor");
+      }
+    } catch (error: unknown) {
+      console.error("Erro ao cadastrar aluno:", error);
+      
+      // Tratar diferentes tipos de erro
+      let errorMessage = "Erro ao cadastrar aluno. Tente novamente.";
+      
+      if (error instanceof APIError) {
+        if (error.statusCode === 401) {
+          errorMessage = "Sessão expirada. Por favor, faça login novamente.";
+        } else if (error.statusCode === 403) {
+          errorMessage = "Você não tem permissão para cadastrar alunos.";
+        } else if (error.statusCode === 400 || error.statusCode === 422) {
+          // Tentar extrair mensagens de validação do backend
+          const errorData = error.data as any;
+          if (errorData?.message) {
+            errorMessage = Array.isArray(errorData.message) 
+              ? errorData.message.join(", ")
+              : errorData.message;
+          } else {
+            errorMessage = error.message || "Dados inválidos. Verifique os campos preenchidos.";
+          }
+        } else {
+          errorMessage = error.message;
+        }
+      } else {
+        errorMessage = handleAPIError(error);
+      }
+      
+      alert(errorMessage);
     } finally {
       setSubmitting(false);
     }
@@ -341,12 +441,27 @@ export default function CreateStudentScreen({
                   <label
                     className={`block text-sm ${colors.textSecondary} mb-2 font-medium`}
                   >
-                    Telefone do Contato
+                    Telefone do Contato*
                   </label>
                   <input
                     value={emergencyPhone}
                     onChange={(e) => setEmergencyPhone(e.target.value)}
                     placeholder="(00) 00000-0000"
+                    className={`w-full rounded-xl p-3 ${colors.input} ${colors.text} border ${colors.border} focus:border-lime-400 focus:outline-none transition`}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    className={`block text-sm ${colors.textSecondary} mb-2 font-medium`}
+                  >
+                    E-mail do Contato*
+                  </label>
+                  <input
+                    type="email"
+                    value={emergencyEmail}
+                    onChange={(e) => setEmergencyEmail(e.target.value)}
+                    placeholder="email@exemplo.com"
                     className={`w-full rounded-xl p-3 ${colors.input} ${colors.text} border ${colors.border} focus:border-lime-400 focus:outline-none transition`}
                   />
                 </div>
@@ -490,18 +605,4 @@ export default function CreateStudentScreen({
       </div>
     </div>
   );
-}
-
-function calcAgeFromBirth(birth: string) {
-  if (!birth) return undefined;
-  const dob = new Date(birth);
-  const diff = Date.now() - dob.getTime();
-  const ageDt = new Date(diff);
-  return Math.abs(ageDt.getUTCFullYear() - 1970);
-}
-
-function mapGoalToLevel(goal: string) {
-  if (goal === "hipertrofia") return 8;
-  if (goal === "condicionamento") return 5;
-  return 1;
 }

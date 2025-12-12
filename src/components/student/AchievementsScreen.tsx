@@ -8,9 +8,10 @@ import { getThemeColors } from "../../theme/colors";
 
 interface AchievementsScreenProps {
   user: UserData;
+  onUserDataUpdate?: () => void;
 }
 
-const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
+const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdate }) => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [filter, setFilter] = useState<"all" | "unlocked" | "locked">("all");
   const { theme } = useTheme();
@@ -19,8 +20,12 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
   const userName = user.name;
 
   useEffect(() => {
-    api.getAchievements().then(setAchievements);
-  }, []);
+    // Buscar achievements específicos do aluno logado
+    api.getAchievements(user.id).then(setAchievements).catch((error) => {
+      console.error("[AchievementsScreen] Erro ao buscar achievements:", error);
+      setAchievements([]);
+    });
+  }, [user.id]);
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
   const totalPoints = unlockedCount * 50;

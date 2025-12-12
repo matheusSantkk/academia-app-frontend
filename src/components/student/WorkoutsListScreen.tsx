@@ -21,6 +21,7 @@ import { getThemeColors } from "../../theme/colors";
 
 interface WorkoutsListScreenProps {
   user: UserData;
+  onUserDataUpdate?: () => void;
 }
 
 function calculateBonusXP(
@@ -34,16 +35,22 @@ function calculateBonusXP(
   return Math.round(baseXP * (1 + totalBonus / 100));
 }
 
-const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user }) => {
+const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDataUpdate }) => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [earnedXP, setEarnedXP] = useState(0);
+  const [userData, setUserData] = useState<UserData>(user);
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
   useEffect(() => {
-    api.getWorkouts().then(setWorkouts);
-  }, []);
+    // Buscar treinos específicos do aluno logado
+    api.getWorkouts(user.id).then(setWorkouts).catch((error) => {
+      console.error("[WorkoutsListScreen] Erro ao buscar treinos:", error);
+      setWorkouts([]);
+    });
+  }, [user.id]);
 
   const updateWeight = (
     workoutId: string,
@@ -81,7 +88,8 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user }) => {
     );
   };
 
-  const completeAllExercises = (workoutId: string) => {
+  const completeAllExercises = async (workoutId: string) => {
+    // Marcar todos os exercícios como completos localmente
     setWorkouts((prev) =>
       prev.map((w) =>
         w.id === workoutId
@@ -92,8 +100,44 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user }) => {
           : w
       )
     );
-    setShowCompletionModal(true);
-    setTimeout(() => setShowCompletionModal(false), 3000);
+
+    try {
+      // Chamar o backend para completar o treino e ganhar XP
+      const result = await api.completeWorkout(workoutId, user.id);
+      
+      // Atualizar XP e level do usuário
+      if (result.member) {
+        setUserData({
+          ...userData,
+          points: result.member.xp,
+          level: result.member.level,
+        });
+        setEarnedXP(result.xpEarned);
+      }
+      
+      setShowCompletionModal(true);
+      setTimeout(() => {
+        setShowCompletionModal(false);
+        // Recarregar dados do usuário para atualizar XP
+        api.getMemberData(user.id).then((memberData) => {
+          setUserData({
+            ...userData,
+            points: memberData.xp,
+            level: memberData.level,
+          });
+          // Notificar o App.tsx para atualizar o user global
+          if (onUserDataUpdate) {
+            onUserDataUpdate();
+          }
+        }).catch(console.error);
+      }, 3000);
+    } catch (error) {
+      console.error("[WorkoutsListScreen] Erro ao completar treino:", error);
+      // Mesmo com erro, mostrar o modal
+      setEarnedXP(10);
+      setShowCompletionModal(true);
+      setTimeout(() => setShowCompletionModal(false), 3000);
+    }
   };
 
   if (selectedWorkout) {
@@ -103,10 +147,11 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user }) => {
     const prCount = workout.exercises.filter(
       (e) => e.isPR && e.completed
     ).length;
-    const baseXP = 10;
-    const earnedXP = calculateBonusXP(baseXP, user.streak || 0, prCount);
     const allCompleted = completedCount === workout.exercises.length;
     const progress = (completedCount / workout.exercises.length) * 100;
+    const baseXP = 10;
+    const calculatedXP = calculateBonusXP(baseXP, userData.streak || 0, prCount);
+    const displayedXP = earnedXP > 0 ? earnedXP : (allCompleted ? baseXP : calculatedXP);
 
     return (
       <div className={`min-h-screen ${colors.background} ${colors.text} pb-24`}>
@@ -128,7 +173,7 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user }) => {
                 </p>
                 <div className="bg-gradient-to-r from-lime-400/20 to-lime-500/20 rounded-xl p-4 border border-lime-400/30">
                   <p className="text-lime-400 font-bold text-3xl">
-                    +{earnedXP} XP
+                    +{displayedXP} XP
                   </p>
                   <p className={`text-sm ${colors.textSecondary} mt-1`}>
                     Experiência ganha
@@ -243,14 +288,14 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user }) => {
               <div className="flex items-center justify-center gap-2 mb-2">
                 <Trophy className="w-6 h-6 text-lime-400" />
                 <p className="text-lime-400 font-bold text-xl">
-                  +{earnedXP} XP Ganhos!
+                  +{earnedXP || 10} XP Ganhos!
                 </p>
               </div>
               <div className="flex items-center justify-center gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <Flame className="w-4 h-4 text-orange-400" />
                   <span className={colors.textSecondary}>
-                    Streak: {user.streak} dias
+                    Streak: {userData.streak || 0} dias
                   </span>
                 </div>
                 {prCount > 0 && (
