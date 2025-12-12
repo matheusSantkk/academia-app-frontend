@@ -6,7 +6,6 @@ import {
   mockRankingMonthly,
   mockRankingTotal,
   mockStudents as initialMockStudents,
-  mockMedicalInfo,
 } from "../data/MockData";
 import type {
   UserData,
@@ -43,10 +42,12 @@ export const calculateBonusXP = (
 };
 
 // --- Storage helpers ---
-const LOCAL_STUDENTS_KEY = "app_students_v1";
+const LOCAL_STUDENTS_KEY = "app_students_v2";
 const LOCAL_TRAININGS_KEY = "app_trainings_v1";
+const LOCAL_MEDICAL_INFO_KEY = "app_medical_info_v2";
 
 type TrainingsMap = Record<string, Workout[]>;
+type MedicalInfoMap = Record<string, StudentMedicalInfo>;
 
 const studentsStore = (() => {
   let students: StudentData[] = [];
@@ -89,6 +90,17 @@ const studentsStore = (() => {
         age: partial.age || 18,
         level: partial.level ?? 1,
         points: partial.points ?? 0,
+        weight: partial.weight,
+        height: partial.height,
+        gender: partial.gender,
+        phone: partial.phone,
+        birthDate: partial.birthDate,
+        emergencyContact: partial.emergencyContact,
+        emergencyPhone: partial.emergencyPhone,
+        goal: partial.goal,
+        experience: partial.experience,
+        frequency: partial.frequency,
+        healthNotes: partial.healthNotes,
       };
       students.push(newStudent);
       save();
@@ -141,6 +153,45 @@ const trainingsStore = (() => {
   } as const;
 })();
 
+const medicalInfoStore = (() => {
+  let map: MedicalInfoMap = {};
+
+  const load = () => {
+    try {
+      const raw = localStorage.getItem(LOCAL_MEDICAL_INFO_KEY);
+      if (raw) {
+        map = JSON.parse(raw) as MedicalInfoMap;
+        return;
+      }
+    } catch {
+      // ignore
+    }
+    map = {};
+    save();
+  };
+
+  const save = () => {
+    try {
+      localStorage.setItem(LOCAL_MEDICAL_INFO_KEY, JSON.stringify(map));
+    } catch {
+      // ignore
+    }
+  };
+
+  load();
+
+  return {
+    get: (studentId: string): StudentMedicalInfo | null => {
+      return map[studentId] || null;
+    },
+    set: (info: StudentMedicalInfo) => {
+      map[info.studentId] = info;
+      save();
+      return info;
+    },
+  };
+})();
+
 // --- Mock API Implementation ---
 const mockAPI = {
   login: async (email: string, _password: string): Promise<UserData> => {
@@ -183,10 +234,32 @@ const mockAPI = {
     );
   },
 
-  getMedicalInfo: async (_studentId: string): Promise<StudentMedicalInfo> => {
-    return new Promise((resolve) =>
-      setTimeout(() => resolve(mockMedicalInfo), 300)
-    );
+  getMedicalInfo: async (studentId: string): Promise<StudentMedicalInfo> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const info = medicalInfoStore.get(studentId);
+        if (info) {
+          resolve(info);
+        } else {
+          // Criar info médica padrão se não existir
+          const student = studentsStore.list().find((s) => s.id === studentId);
+          const defaultInfo: StudentMedicalInfo = {
+            studentId,
+            studentName: student?.name || "Aluno",
+            age: student?.age || 18,
+            weight: student?.weight || 70,
+            height: student?.height || 1.75,
+            bloodPressure: "120/80",
+            heartCondition: false,
+            injuries: [],
+            restrictions: [],
+            notes: student?.healthNotes || "",
+          };
+          medicalInfoStore.set(defaultInfo);
+          resolve(defaultInfo);
+        }
+      }, 300);
+    });
   },
 
   createStudent: async (
@@ -195,6 +268,24 @@ const mockAPI = {
     return new Promise((resolve) => {
       setTimeout(() => {
         const newStudent = studentsStore.create(student);
+
+        // Criar informações médicas se tiver peso e altura
+        if (student.weight && student.height) {
+          const medicalInfo: StudentMedicalInfo = {
+            studentId: newStudent.id,
+            studentName: newStudent.name,
+            age: newStudent.age,
+            weight: student.weight,
+            height: student.height,
+            bloodPressure: "120/80",
+            heartCondition: false,
+            injuries: [],
+            restrictions: [],
+            notes: student.healthNotes || "",
+          };
+          medicalInfoStore.set(medicalInfo);
+        }
+
         resolve(newStudent);
       }, 400);
     });
@@ -202,7 +293,41 @@ const mockAPI = {
 
   updateStudent: async (id: string, patch: Partial<StudentData>) => {
     return new Promise<StudentData | null>((resolve) => {
-      setTimeout(() => resolve(studentsStore.update(id, patch)), 300);
+      setTimeout(() => {
+        const updated = studentsStore.update(id, patch);
+
+        // Atualizar informações médicas se necessário
+        if (updated && (patch.weight || patch.height || patch.healthNotes)) {
+          const medicalInfo = medicalInfoStore.get(id);
+          if (medicalInfo) {
+            medicalInfoStore.set({
+              ...medicalInfo,
+              weight: patch.weight ?? medicalInfo.weight,
+              height: patch.height ?? medicalInfo.height,
+              notes: patch.healthNotes ?? medicalInfo.notes,
+              studentName: patch.name ?? medicalInfo.studentName,
+              age: patch.age ?? medicalInfo.age,
+            });
+          } else if (patch.weight && patch.height) {
+            // Criar se não existir
+            const newMedicalInfo: StudentMedicalInfo = {
+              studentId: id,
+              studentName: updated.name,
+              age: updated.age,
+              weight: patch.weight,
+              height: patch.height,
+              bloodPressure: "120/80",
+              heartCondition: false,
+              injuries: [],
+              restrictions: [],
+              notes: patch.healthNotes || "",
+            };
+            medicalInfoStore.set(newMedicalInfo);
+          }
+        }
+
+        resolve(updated);
+      }, 300);
     });
   },
 
@@ -223,7 +348,6 @@ const mockAPI = {
 };
 
 // --- Server API Implementation ---
-// Para ativar, defina VITE_API_MODE=server no .env
 const serverAPI = {
   login: async (email: string, password: string): Promise<UserData> => {
     const response = await httpClient.post<{ user: UserData; token: string }>(
@@ -231,7 +355,6 @@ const serverAPI = {
       { email, password }
     );
 
-    // Salva o token
     if (response.token) {
       httpClient.setAuthToken(response.token);
       localStorage.setItem("auth_token", response.token);
