@@ -155,14 +155,14 @@ const mockAPI = {
     });
   },
 
-  getWorkouts: async (memberId?: string): Promise<Workout[]> => {
+  getWorkouts: async (_memberId?: string): Promise<Workout[]> => {
     // No mock, retorna os treinos mockados independente do memberId
     return new Promise((resolve) =>
       setTimeout(() => resolve(mockWorkouts), 300)
     );
   },
 
-  getAchievements: async (memberId?: string): Promise<Achievement[]> => {
+  getAchievements: async (_memberId?: string): Promise<Achievement[]> => {
     // No mock, retorna os achievements mockados independente do memberId
     return new Promise((resolve) =>
       setTimeout(() => resolve(mockAchievements), 300)
@@ -179,7 +179,7 @@ const mockAPI = {
     });
   },
 
-  getMemberData: async (memberId: string): Promise<{
+  getMemberData: async (_memberId: string): Promise<{
     id: string;
     name: string;
     email: string;
@@ -246,7 +246,7 @@ const mockAPI = {
     );
   },
 
-  memberLogin: async (email: string, _password: string): Promise<UserData & { needsPasswordChange?: boolean }> => {
+  memberLogin: async (_email: string, _password: string): Promise<UserData & { needsPasswordChange?: boolean }> => {
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve({
@@ -260,6 +260,35 @@ const mockAPI = {
   changePassword: async (_newPassword: string): Promise<void> => {
     return new Promise((resolve) => {
       setTimeout(() => resolve(), 300);
+    });
+  },
+
+  completeWorkout: async (_workoutId: string, _memberId?: string): Promise<{
+    id: string;
+    xpEarned: number;
+    member: {
+      id: string;
+      xp: number;
+      level: number;
+    };
+  }> => {
+    // No mock, simula completar treino e ganhar XP
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const xpEarned = Math.floor(Math.random() * 50) + 10; // 10-60 XP
+        const newXP = (mockStudentUser.points || 0) + xpEarned;
+        const newLevel = Math.floor(newXP / 100) + 1;
+        
+        resolve({
+          id: _workoutId,
+          xpEarned,
+          member: {
+            id: mockStudentUser.id,
+            xp: newXP,
+            level: newLevel,
+          },
+        });
+      }, 500);
     });
   },
 };

@@ -11,7 +11,7 @@ interface AchievementsScreenProps {
   onUserDataUpdate?: () => void;
 }
 
-const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdate }) => {
+const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdate: _onUserDataUpdate }) => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [filter, setFilter] = useState<"all" | "unlocked" | "locked">("all");
   const { theme } = useTheme();

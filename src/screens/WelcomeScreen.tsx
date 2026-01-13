@@ -1,6 +1,4 @@
-import { useState } from "react";
 import { Dumbbell, User, GraduationCap } from "lucide-react";
-import type { UserData } from "../types";
 
 interface Props {
   onSelectType: (type: "student" | "teacher") => void;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { User, Heart, AlertCircle } from "lucide-react";
-import type { StudentMedicalInfo, StudentData } from "../../types";
+import type { StudentMedicalInfo } from "../../types";
 import { api } from "../../api";
 import { useTheme } from "../../theme/context";
 import { getThemeColors } from "../../theme/colors";
