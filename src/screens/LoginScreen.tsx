@@ -166,7 +166,7 @@ const LoginScreen: React.FC<{
           <div className="inline-flex items-center justify-center w-20 h-20 bg-lime-400 rounded-2xl mb-4 shadow-lg shadow-lime-400/20">
             <Dumbbell className="w-10 h-10 text-slate-900" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2">FitTrack</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">FormaMais</h1>
           <p className="text-slate-400">Seu treino, seu progresso</p>
           
           {/* Indicador de Status do Servidor */}
