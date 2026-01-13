@@ -1,6 +1,6 @@
 # 💪 Academia App - Frontend
 
-Aplicativo web moderno para gestão de academia, desenvolvido com React, TypeScript e Vite. O sistema oferece interfaces diferenciadas para professores e alunos, com funcionalidades completas de gerenciamento de treinos, conquistas, ranking e muito mais.
+Aplicativo web moderno para gestão da academia Forma+, desenvolvido com React, TypeScript e Vite. O sistema oferece interfaces diferenciadas para professores e alunos, com funcionalidades completas de gerenciamento de treinos, conquistas, ranking e muito mais.
 
 ## 📋 Índice
 
@@ -19,7 +19,7 @@ Aplicativo web moderno para gestão de academia, desenvolvido com React, TypeScr
 
 ## 🎯 Sobre o Projeto
 
-O **M** é uma solução completa para gestão de academias, permitindo que professores gerenciem alunos e treinos, enquanto os alunos acompanham seu progresso, completam treinos, desbloqueiam conquistas e competem em rankings.
+O **Forma+ App** é uma solução completa para gestão da academia Forma+, permitindo que professores gerenciem alunos e treinos, enquanto os alunos acompanham seu progresso, completam treinos, desbloqueiam conquistas e competem em rankings.
 
 ### Principais Características
 
