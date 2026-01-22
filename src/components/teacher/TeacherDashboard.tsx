@@ -63,7 +63,7 @@ export default function TeacherDashboard({
         >
           <div className="flex items-center gap-4 mb-4">
             <div
-              className={`w-16 h-16 bg-gradient-to-br from-lime-400 to-lime-500 rounded-full flex items-center justify-center shrink-0 shadow-md`}
+              className={`w-16 h-16 bg-linear-to-br from-lime-400 to-lime-500 rounded-full flex items-center justify-center shrink-0 shadow-md`}
             >
               <span className="text-2xl font-bold text-slate-900">JS</span>
             </div>
@@ -101,7 +101,7 @@ export default function TeacherDashboard({
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setActiveTab("students-list")}
-              className={`${colors.card} border ${colors.border} p-4 rounded-2xl flex flex-col gap-2 shadow-md cursor-pointer transition hover:border-lime-400 active:scale-[0.98]`}
+              className={`${colors.card} border ${colors.border} p-4 rounded-2xl flex flex-col gap-2 items-start shadow-md cursor-pointer transition hover:border-lime-400 active:scale-[0.98]`}
             >
               <Users size={24} className="text-lime-400" />
               <span className="text-3xl font-bold">{totalStudents}</span>
@@ -111,7 +111,7 @@ export default function TeacherDashboard({
             </button>
 
             <div
-              className={`${colors.card} border ${colors.border} p-4 rounded-2xl flex flex-col gap-2 shadow-md`}
+              className={`${colors.card} border ${colors.border} p-4 rounded-2xl flex flex-col gap-2 items-start shadow-md`}
             >
               <Activity size={24} className="text-blue-400" />
               <span className="text-3xl font-bold">{activeStudents}</span>
@@ -121,7 +121,7 @@ export default function TeacherDashboard({
             </div>
 
             <div
-              className={`${colors.card} border ${colors.border} p-4 rounded-2xl flex flex-col gap-2 shadow-md`}
+              className={`${colors.card} border ${colors.border} p-4 rounded-2xl flex flex-col gap-2 items-start shadow-md`}
             >
               <Dumbbell size={24} className="text-purple-400" />
               <span className="text-3xl font-bold">{totalWorkouts}</span>
@@ -131,7 +131,7 @@ export default function TeacherDashboard({
             </div>
 
             <div
-              className={`${colors.card} border ${colors.border} p-4 rounded-2xl flex flex-col gap-2 shadow-md`}
+              className={`${colors.card} border ${colors.border} p-4 rounded-2xl flex flex-col gap-2 items-start shadow-md`}
             >
               <TrendingUp size={24} className="text-orange-400" />
               <span className="text-3xl font-bold">{avgLevel}</span>
@@ -209,7 +209,7 @@ export default function TeacherDashboard({
                       <div
                         className={`w-12 h-12 ${
                           idx === 0
-                            ? "bg-gradient-to-br from-yellow-400 to-yellow-500"
+                            ? "bg-linear-to-br from-yellow-400 to-yellow-500"
                             : "bg-lime-400"
                         } rounded-full flex items-center justify-center font-bold text-slate-900 shadow-md`}
                       >

@@ -11,9 +11,8 @@ interface AchievementsScreenProps {
   onUserDataUpdate?: () => void;
 }
 
-const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdate: _onUserDataUpdate }) => {
+const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
   const [achievements, setAchievements] = useState<Achievement[]>([]);
-  const [filter, setFilter] = useState<"all" | "unlocked" | "locked">("all");
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
@@ -21,32 +20,39 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdat
 
   useEffect(() => {
     // Buscar achievements específicos do aluno logado
-    api.getAchievements(user.id).then(setAchievements).catch((error) => {
-      console.error("[AchievementsScreen] Erro ao buscar achievements:", error);
-      setAchievements([]);
-    });
+    api
+      .getAchievements(user.id)
+      .then(setAchievements)
+      .catch((error) => {
+        console.error(
+          "[AchievementsScreen] Erro ao buscar achievements:",
+          error,
+        );
+        setAchievements([]);
+      });
   }, [user.id]);
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
   const totalPoints = unlockedCount * 50;
 
-  const filteredAchievements = achievements.filter((a) => {
-    if (filter === "unlocked") return a.unlocked;
-    if (filter === "locked") return !a.unlocked;
-    return true;
-  });
-
   const getRarityColor = (id: string) => {
-    if (id === "a5") return "from-purple-500 to-pink-500";
-    if (id === "a4") return "from-blue-500 to-cyan-500";
-    if (id === "a3") return "from-green-500 to-lime-500";
+    // Lendárias (a13-a16)
+    if (["a13", "a14", "a15", "a16"].includes(id))
+      return "from-purple-500 to-pink-500";
+    // Raras (a9-a12)
+    if (["a9", "a10", "a11", "a12"].includes(id))
+      return "from-blue-500 to-cyan-500";
+    // Incomuns (a5-a8)
+    if (["a5", "a6", "a7", "a8"].includes(id))
+      return "from-green-500 to-lime-500";
+    // Comuns (a1-a4)
     return "from-gray-500 to-gray-600";
   };
 
   const getRarityLabel = (id: string) => {
-    if (id === "a5") return "Lendário";
-    if (id === "a4") return "Raro";
-    if (id === "a3") return "Incomum";
+    if (["a13", "a14", "a15", "a16"].includes(id)) return "Lendário";
+    if (["a9", "a10", "a11", "a12"].includes(id)) return "Raro";
+    if (["a5", "a6", "a7", "a8"].includes(id)) return "Incomum";
     return "Comum";
   };
 
@@ -56,7 +62,7 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdat
         className={`${colors.card} border-b ${colors.border} p-6 pb-8 shadow-sm`}
       >
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-md">
+          <div className="w-12 h-12 bg-linear-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center shadow-md">
             <Trophy className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -70,7 +76,7 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdat
         </div>
 
         <div
-          className={`${colors.card} border-2 border-yellow-400/50 rounded-2xl p-5 text-center shadow-lg bg-gradient-to-br from-yellow-400/5 to-orange-500/5`}
+          className={`${colors.card} border-2 border-yellow-400/50 rounded-2xl p-5 text-center shadow-lg bg-linear-to-br from-yellow-400/5 to-orange-500/5`}
         >
           <div className="flex items-center justify-center gap-3 mb-3">
             <Award className="w-8 h-8 text-yellow-400" />
@@ -86,7 +92,7 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdat
 
           <div className="w-full bg-gray-700/30 rounded-full h-3 mb-3 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-yellow-400 to-orange-500 h-3 rounded-full transition-all duration-500"
+              className="bg-linear-to-r from-yellow-400 to-orange-500 h-3 rounded-full transition-all duration-500"
               style={{
                 width: `${
                   achievements.length > 0
@@ -114,48 +120,11 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdat
             </div>
           </div>
         </div>
-
-        <div className="mt-4">
-          <div className={`flex gap-2 ${colors.input} p-1 rounded-xl`}>
-            <button
-              onClick={() => setFilter("all")}
-              className={`flex-1 py-2.5 rounded-lg font-medium transition-all text-sm ${
-                filter === "all"
-                  ? "bg-lime-400 text-slate-900 shadow-md"
-                  : `${colors.textSecondary}`
-              }`}
-            >
-              Todas ({achievements.length})
-            </button>
-
-            <button
-              onClick={() => setFilter("unlocked")}
-              className={`flex-1 py-2.5 rounded-lg font-medium transition-all text-sm ${
-                filter === "unlocked"
-                  ? "bg-lime-400 text-slate-900 shadow-md"
-                  : `${colors.textSecondary}`
-              }`}
-            >
-              Desbloqueadas ({unlockedCount})
-            </button>
-
-            <button
-              onClick={() => setFilter("locked")}
-              className={`flex-1 py-2.5 rounded-lg font-medium transition-all text-sm ${
-                filter === "locked"
-                  ? "bg-lime-400 text-slate-900 shadow-md"
-                  : `${colors.textSecondary}`
-              }`}
-            >
-              Bloqueadas ({achievements.length - unlockedCount})
-            </button>
-          </div>
-        </div>
       </div>
-      
- 
+
+      {/* Lista de Conquistas */}
       <div className="p-6 space-y-3">
-        {filteredAchievements.map((achievement) => (
+        {achievements.map((achievement) => (
           <div
             key={achievement.id}
             className={`rounded-2xl p-5 border transition-all shadow-md ${
@@ -168,8 +137,8 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdat
               <div
                 className={`relative w-16 h-16 rounded-xl flex items-center justify-center text-4xl shrink-0 ${
                   achievement.unlocked
-                    ? `bg-gradient-to-br ${getRarityColor(
-                        achievement.id
+                    ? `bg-linear-to-br ${getRarityColor(
+                        achievement.id,
                       )} shadow-lg`
                     : `${colors.input}`
                 }`}
@@ -189,8 +158,8 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdat
                     </h3>
                     {achievement.unlocked && (
                       <span
-                        className={`text-xs font-semibold px-2 py-1 rounded-md bg-gradient-to-r ${getRarityColor(
-                          achievement.id
+                        className={`text-xs font-semibold px-2 py-1 rounded-md bg-linear-to-r ${getRarityColor(
+                          achievement.id,
                         )} text-white shadow-sm`}
                       >
                         {getRarityLabel(achievement.id)}
@@ -218,7 +187,7 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdat
                           day: "2-digit",
                           month: "long",
                           year: "numeric",
-                        }
+                        },
                       )}
                     </span>
                   </div>
@@ -235,7 +204,7 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdat
           </div>
         ))}
 
-        {filteredAchievements.length === 0 && (
+        {achievements.length === 0 && (
           <div
             className={`${colors.card} border ${colors.border} rounded-xl p-12 text-center`}
           >
@@ -246,9 +215,7 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user, onUserDataUpdat
               Nenhuma conquista encontrada
             </h3>
             <p className={`${colors.textSecondary} text-sm`}>
-              {filter === "unlocked"
-                ? "Continue treinando para desbloquear conquistas"
-                : "Tente outro filtro"}
+              Continue treinando para desbloquear conquistas
             </p>
           </div>
         )}

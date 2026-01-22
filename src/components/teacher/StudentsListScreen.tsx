@@ -30,8 +30,8 @@ export default function StudentsListScreen({
   const colors = getThemeColors(theme);
 
   useEffect(() => {
-    setLoading(true);
-    api.getStudents()
+    api
+      .getStudents()
       .then((list) => {
         setStudents(list);
         setLoading(false);
@@ -44,7 +44,7 @@ export default function StudentsListScreen({
   }, []);
 
   const filtered = students.filter((s) =>
-    s.name.toLowerCase().includes(query.trim().toLowerCase())
+    s.name.toLowerCase().includes(query.trim().toLowerCase()),
   );
 
   const activeStudents = students.filter((s) => (s.points ?? 0) > 0).length;
@@ -131,7 +131,7 @@ export default function StudentsListScreen({
               >
                 <div className="flex items-center gap-4 mb-4">
                   <div
-                    className={`w-14 h-14 bg-gradient-to-br from-lime-400 to-lime-500 rounded-xl flex items-center justify-center shrink-0 shadow-md relative`}
+                    className={`w-14 h-14 bg-linear-to-br from-lime-400 to-lime-500 rounded-xl flex items-center justify-center shrink-0 shadow-md relative`}
                   >
                     <span className="font-bold text-slate-900 text-lg">
                       {student.name.charAt(0).toUpperCase()}

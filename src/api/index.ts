@@ -23,7 +23,7 @@ import { API_ENDPOINTS } from "./config";
 // FUNÇÕES AUXILIARES
 export const calculateLevelProgress = (
   points: number,
-  level: number
+  level: number,
 ): number => {
   const pointsForNextLevel = level * 50;
   if (pointsForNextLevel === 0) return 0;
@@ -34,7 +34,7 @@ export const calculateLevelProgress = (
 export const calculateBonusXP = (
   baseXP: number,
   streak: number,
-  prsCount: number
+  prsCount: number,
 ): number => {
   const streakBonus = Math.min(streak * 10, 100);
   const prBonus = prsCount * 10;
@@ -144,6 +144,8 @@ const trainingsStore = (() => {
 // --- Mock API Implementation ---
 const mockAPI = {
   login: async (email: string, _password: string): Promise<UserData> => {
+    // marcar _password como usado para satisfazer linter (mock)
+    void _password;
     return new Promise((resolve) => {
       setTimeout(() => {
         if (email.includes("professor")) {
@@ -156,16 +158,20 @@ const mockAPI = {
   },
 
   getWorkouts: async (_memberId?: string): Promise<Workout[]> => {
+    // marcar _memberId como usado para satisfazer linter (mock)
+    void _memberId;
     // No mock, retorna os treinos mockados independente do memberId
     return new Promise((resolve) =>
-      setTimeout(() => resolve(mockWorkouts), 300)
+      setTimeout(() => resolve(mockWorkouts), 300),
     );
   },
 
   getAchievements: async (_memberId?: string): Promise<Achievement[]> => {
+    // marcar _memberId como usado para satisfazer linter (mock)
+    void _memberId;
     // No mock, retorna os achievements mockados independente do memberId
     return new Promise((resolve) =>
-      setTimeout(() => resolve(mockAchievements), 300)
+      setTimeout(() => resolve(mockAchievements), 300),
     );
   },
 
@@ -174,12 +180,14 @@ const mockAPI = {
       setTimeout(
         () =>
           resolve(type === "monthly" ? mockRankingMonthly : mockRankingTotal),
-        300
+        300,
       );
     });
   },
 
-  getMemberData: async (_memberId: string): Promise<{
+  getMemberData: async (
+    _memberId: string,
+  ): Promise<{
     id: string;
     name: string;
     email: string;
@@ -187,6 +195,8 @@ const mockAPI = {
     xp: number;
     currentStreak: number;
   }> => {
+    // marcar _memberId como usado para satisfazer linter (mock)
+    void _memberId;
     // No mock, retorna dados do mockStudentUser
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -204,18 +214,19 @@ const mockAPI = {
 
   getStudents: async (): Promise<StudentData[]> => {
     return new Promise((resolve) =>
-      setTimeout(() => resolve(studentsStore.list()), 300)
+      setTimeout(() => resolve(studentsStore.list()), 300),
     );
   },
 
   getMedicalInfo: async (_studentId: string): Promise<StudentMedicalInfo> => {
+    void _studentId;
     return new Promise((resolve) =>
-      setTimeout(() => resolve(mockMedicalInfo), 300)
+      setTimeout(() => resolve(mockMedicalInfo), 300),
     );
   },
 
   createStudent: async (
-    student: Partial<StudentData>
+    student: Partial<StudentData>,
   ): Promise<StudentData> => {
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -233,20 +244,26 @@ const mockAPI = {
 
   getTraining: async (studentId: string): Promise<Workout[]> => {
     return new Promise((resolve) =>
-      setTimeout(() => resolve(trainingsStore.get(studentId)), 250)
+      setTimeout(() => resolve(trainingsStore.get(studentId)), 250),
     );
   },
 
   saveTraining: async (
     studentId: string,
-    workouts: Workout[]
+    workouts: Workout[],
   ): Promise<Workout[]> => {
     return new Promise((resolve) =>
-      setTimeout(() => resolve(trainingsStore.set(studentId, workouts)), 400)
+      setTimeout(() => resolve(trainingsStore.set(studentId, workouts)), 400),
     );
   },
 
-  memberLogin: async (_email: string, _password: string): Promise<UserData & { needsPasswordChange?: boolean }> => {
+  memberLogin: async (
+    _email: string,
+    _password: string,
+  ): Promise<UserData & { needsPasswordChange?: boolean }> => {
+    // marcar parâmetros como usados para satisfazer linter (mock)
+    void _email;
+    void _password;
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve({
@@ -258,12 +275,16 @@ const mockAPI = {
   },
 
   changePassword: async (_newPassword: string): Promise<void> => {
+    void _newPassword;
     return new Promise((resolve) => {
       setTimeout(() => resolve(), 300);
     });
   },
 
-  completeWorkout: async (_workoutId: string, _memberId?: string): Promise<{
+  completeWorkout: async (
+    _workoutId: string,
+    _memberId?: string,
+  ): Promise<{
     id: string;
     xpEarned: number;
     member: {
@@ -273,12 +294,14 @@ const mockAPI = {
     };
   }> => {
     // No mock, simula completar treino e ganhar XP
+    // marcar _memberId como usado (pode ser undefined)
+    void _memberId;
     return new Promise((resolve) => {
       setTimeout(() => {
         const xpEarned = Math.floor(Math.random() * 50) + 10; // 10-60 XP
         const newXP = (mockStudentUser.points || 0) + xpEarned;
         const newLevel = Math.floor(newXP / 100) + 1;
-        
+
         resolve({
           id: _workoutId,
           xpEarned,
@@ -299,22 +322,22 @@ const serverAPI = {
   login: async (email: string, password: string): Promise<UserData> => {
     // Garantir que email está normalizado
     const normalizedEmail = email.trim().toLowerCase();
-    
+
     console.log("[API] Tentando login:", { email: normalizedEmail });
-    
-    const response = await httpClient.post<{ 
-      accessToken: string; 
+
+    const response = await httpClient.post<{
+      accessToken: string;
       instructorId: string;
       instructor: {
         id: string;
         name: string;
         email: string;
       };
-    }>(
-      API_ENDPOINTS.AUTH.LOGIN,
-      { email: normalizedEmail, password: password.trim() }
-    );
-    
+    }>(API_ENDPOINTS.AUTH.LOGIN, {
+      email: normalizedEmail,
+      password: password.trim(),
+    });
+
     console.log("[API] Login bem-sucedido:", response);
 
     // Salva o token
@@ -332,13 +355,16 @@ const serverAPI = {
     };
   },
 
-  memberLogin: async (email: string, password: string): Promise<UserData & { needsPasswordChange?: boolean }> => {
+  memberLogin: async (
+    email: string,
+    password: string,
+  ): Promise<UserData & { needsPasswordChange?: boolean }> => {
     const normalizedEmail = email.trim().toLowerCase();
-    
+
     console.log("[API] Tentando login de membro:", { email: normalizedEmail });
-    
-    const response = await httpClient.post<{ 
-      accessToken: string; 
+
+    const response = await httpClient.post<{
+      accessToken: string;
       memberId: string;
       member: {
         id: string;
@@ -346,11 +372,11 @@ const serverAPI = {
         email: string;
       };
       needsPasswordChange: boolean;
-    }>(
-      API_ENDPOINTS.AUTH.MEMBER_LOGIN,
-      { email: normalizedEmail, password: password.trim() }
-    );
-    
+    }>(API_ENDPOINTS.AUTH.MEMBER_LOGIN, {
+      email: normalizedEmail,
+      password: password.trim(),
+    });
+
     console.log("[API] Login de membro bem-sucedido:", response);
 
     // Salva o token
@@ -387,13 +413,15 @@ const serverAPI = {
     if (memberId) {
       // Buscar achievements específicos do aluno
       return httpClient.get<Achievement[]>(
-        API_ENDPOINTS.ACHIEVEMENTS.USER_ACHIEVEMENTS
+        API_ENDPOINTS.ACHIEVEMENTS.USER_ACHIEVEMENTS,
       );
     }
     return httpClient.get<Achievement[]>(API_ENDPOINTS.ACHIEVEMENTS.LIST);
   },
 
-  getMemberData: async (memberId: string): Promise<{
+  getMemberData: async (
+    memberId: string,
+  ): Promise<{
     id: string;
     name: string;
     email: string;
@@ -422,29 +450,34 @@ const serverAPI = {
 
   getStudents: async (): Promise<StudentData[]> => {
     // Buscar membros do backend e converter para StudentData
-    const members = await httpClient.get<Array<{
-      id: string;
-      name: string;
-      email: string;
-      birthDate: string;
-      weight?: number;
-      height?: number;
-      gender?: string;
-      level: number;
-      xp: number;
-      currentStreak: number;
-    }>>(API_ENDPOINTS.MEMBERS.LIST);
-    
+    const members = await httpClient.get<
+      Array<{
+        id: string;
+        name: string;
+        email: string;
+        birthDate: string;
+        weight?: number;
+        height?: number;
+        gender?: string;
+        level: number;
+        xp: number;
+        currentStreak: number;
+      }>
+    >(API_ENDPOINTS.MEMBERS.LIST);
+
     // Converter cada Member para StudentData
-    return members.map(member => {
+    return members.map((member) => {
       const birthDate = new Date(member.birthDate);
       const today = new Date();
       let age = today.getFullYear() - birthDate.getFullYear();
       const monthDiff = today.getMonth() - birthDate.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      if (
+        monthDiff < 0 ||
+        (monthDiff === 0 && today.getDate() < birthDate.getDate())
+      ) {
         age--;
       }
-      
+
       return {
         id: member.id,
         name: member.name,
@@ -463,12 +496,12 @@ const serverAPI = {
 
   getMedicalInfo: async (studentId: string): Promise<StudentMedicalInfo> => {
     return httpClient.get<StudentMedicalInfo>(
-      API_ENDPOINTS.MEMBERS.GET(studentId) + "/medical"
+      API_ENDPOINTS.MEMBERS.GET(studentId) + "/medical",
     );
   },
 
   createStudent: async (
-    student: Partial<StudentData>
+    student: Partial<StudentData>,
   ): Promise<StudentData> => {
     // O backend retorna um Member, precisamos converter para StudentData
     const member = await httpClient.post<{
@@ -484,16 +517,19 @@ const serverAPI = {
       xp: number;
       currentStreak: number;
     }>(API_ENDPOINTS.MEMBERS.CREATE, student);
-    
+
     // Calcular idade a partir da data de nascimento
     const birthDate = new Date(member.birthDate);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    if (
+      monthDiff < 0 ||
+      (monthDiff === 0 && today.getDate() < birthDate.getDate())
+    ) {
       age--;
     }
-    
+
     // Converter Member para StudentData
     return {
       id: member.id,
@@ -512,11 +548,11 @@ const serverAPI = {
 
   updateStudent: async (
     id: string,
-    patch: Partial<StudentData>
+    patch: Partial<StudentData>,
   ): Promise<StudentData | null> => {
     return httpClient.patch<StudentData>(
       API_ENDPOINTS.STUDENTS.UPDATE(id),
-      patch
+      patch,
     );
   },
 
@@ -526,12 +562,18 @@ const serverAPI = {
 
   saveTraining: async (
     studentId: string,
-    workouts: Workout[]
+    workouts: Workout[],
   ): Promise<Workout[]> => {
-    return httpClient.post<Workout[]>(API_ENDPOINTS.TRAINING.SAVE(studentId), workouts);
+    return httpClient.post<Workout[]>(
+      API_ENDPOINTS.TRAINING.SAVE(studentId),
+      workouts,
+    );
   },
 
-  completeWorkout: async (workoutId: string, memberId?: string): Promise<{
+  completeWorkout: async (
+    workoutId: string,
+    memberId?: string,
+  ): Promise<{
     id: string;
     xpEarned: number;
     member: {

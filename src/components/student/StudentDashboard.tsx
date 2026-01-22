@@ -45,43 +45,52 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   useEffect(() => {
     // Buscar dados atualizados do aluno (level, xp, streak)
-    api.getMemberData(user.id).then((memberData) => {
-      setUserData({
-        ...user,
-        level: memberData.level,
-        points: memberData.xp,
-        streak: memberData.currentStreak,
+    api
+      .getMemberData(user.id)
+      .then((memberData) => {
+        setUserData({
+          ...user,
+          level: memberData.level,
+          points: memberData.xp,
+          streak: memberData.currentStreak,
+        });
+        // Notificar o App.tsx para atualizar o user global
+        if (onUserDataUpdate) {
+          onUserDataUpdate();
+        }
+      })
+      .catch((error) => {
+        console.error(
+          "[StudentDashboard] Erro ao buscar dados do membro:",
+          error,
+        );
+        // Manter os dados do user original em caso de erro
       });
-      // Notificar o App.tsx para atualizar o user global
-      if (onUserDataUpdate) {
-        onUserDataUpdate();
-      }
-    }).catch((error) => {
-      console.error("[StudentDashboard] Erro ao buscar dados do membro:", error);
-      // Manter os dados do user original em caso de erro
-    });
 
     // Buscar treinos específicos do aluno logado
-    api.getWorkouts(user.id).then(setWorkouts).catch((error) => {
-      console.error("[StudentDashboard] Erro ao buscar treinos:", error);
-      setWorkouts([]);
-    });
+    api
+      .getWorkouts(user.id)
+      .then(setWorkouts)
+      .catch((error) => {
+        console.error("[StudentDashboard] Erro ao buscar treinos:", error);
+        setWorkouts([]);
+      });
 
     const timer = setTimeout(() => setShowWelcome(false), 5000);
     return () => clearTimeout(timer);
-  }, [user.id]);
+  }, [user, onUserDataUpdate]);
 
   const completedWorkouts = workouts.filter((w) =>
-    w.exercises.every((e) => e.completed)
+    w.exercises.every((e) => e.completed),
   ).length;
 
   const totalExercises = workouts.reduce(
     (acc, w) => acc + w.exercises.length,
-    0
+    0,
   );
   const completedExercises = workouts.reduce(
     (acc, w) => acc + w.exercises.filter((e) => e.completed).length,
-    0
+    0,
   );
 
   const progressPercent =
@@ -91,7 +100,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
 
   const levelProgress = calculateLevelProgress(
     userData.points || 0,
-    userData.level || 1
+    userData.level || 1,
   );
   const nextLevelPoints = (userData.level || 1) * 50;
 
@@ -100,7 +109,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
   const activeDays = [1, 3, 5];
 
   const unlockedAchievements = mockAchievements.filter(
-    (a) => a.unlocked
+    (a) => a.unlocked,
   ).length;
 
   return (
@@ -246,8 +255,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
                       isActive
                         ? "bg-lime-400 text-slate-900"
                         : isToday
-                        ? `${colors.input} ring-2 ring-lime-400`
-                        : colors.input
+                          ? `${colors.input} ring-2 ring-lime-400`
+                          : colors.input
                     }`}
                   >
                     {isActive && <Award className="w-5 h-5" />}

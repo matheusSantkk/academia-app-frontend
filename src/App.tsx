@@ -27,10 +27,12 @@ import StudentsListScreen from "./components/teacher/StudentsListScreen";
 
 export default function App() {
   const [user, setUser] = useState<UserData | null>(null);
-  const [loginType, setLoginType] = useState<"welcome" | "teacher" | "student">("welcome");
+  const [loginType, setLoginType] = useState<"welcome" | "teacher" | "student">(
+    "welcome",
+  );
   const [activeTab, setActiveTab] = useState("dashboard");
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(
-    null
+    null,
   );
 
   const handleLogin = (userData: UserData) => {
@@ -69,9 +71,19 @@ export default function App() {
 
   // Garantir que quando o usuário é aluno e não precisa trocar senha, o activeTab seja "dashboard"
   useEffect(() => {
-    if (user && user.role === "student" && !user.needsPasswordChange && activeTab !== "dashboard" && activeTab !== "workouts" && activeTab !== "achievements" && activeTab !== "ranking" && activeTab !== "settings") {
+    if (
+      user &&
+      user.role === "student" &&
+      !user.needsPasswordChange &&
+      activeTab !== "dashboard" &&
+      activeTab !== "workouts" &&
+      activeTab !== "achievements" &&
+      activeTab !== "ranking" &&
+      activeTab !== "settings"
+    ) {
       console.log("[App] Ajustando activeTab para dashboard para aluno");
-      setActiveTab("dashboard");
+      // Evitar setState síncrono dentro do effect (evita renderizações em cascata)
+      setTimeout(() => setActiveTab("dashboard"), 0);
     }
   }, [user, activeTab]);
 
@@ -84,18 +96,38 @@ export default function App() {
   // Tela de login
   if (!user) {
     if (loginType === "welcome") {
-      return <WelcomeScreen onSelectType={(type) => setLoginType(type === "teacher" ? "teacher" : "student")} />;
+      return (
+        <WelcomeScreen
+          onSelectType={(type) =>
+            setLoginType(type === "teacher" ? "teacher" : "student")
+          }
+        />
+      );
     }
     if (loginType === "teacher") {
-      return <LoginTeacherScreen onLogin={handleLogin} onBack={() => setLoginType("welcome")} />;
+      return (
+        <LoginTeacherScreen
+          onLogin={handleLogin}
+          onBack={() => setLoginType("welcome")}
+        />
+      );
     }
     if (loginType === "student") {
-      return <LoginStudentScreen onLogin={handleLogin} onBack={() => setLoginType("welcome")} />;
+      return (
+        <LoginStudentScreen
+          onLogin={handleLogin}
+          onBack={() => setLoginType("welcome")}
+        />
+      );
     }
     return null;
   }
 
-  console.log("[App] Usuário logado:", { role: user.role, needsPasswordChange: user.needsPasswordChange, activeTab });
+  console.log("[App] Usuário logado:", {
+    role: user.role,
+    needsPasswordChange: user.needsPasswordChange,
+    activeTab,
+  });
 
   // Se o usuário precisa trocar a senha (primeiro login de aluno)
   if (user.role === "student" && user.needsPasswordChange) {
@@ -110,9 +142,14 @@ export default function App() {
 
   const renderContent = () => {
     if (!user) return null;
-    
-    console.log("[App] renderContent - role:", user.role, "activeTab:", activeTab);
-    
+
+    console.log(
+      "[App] renderContent - role:",
+      user.role,
+      "activeTab:",
+      activeTab,
+    );
+
     if (user.role === "teacher") {
       switch (activeTab) {
         case "create-student":
@@ -168,13 +205,26 @@ export default function App() {
 
     // Aluno
     if (user.role === "student") {
-      console.log("[App] Renderizando conteúdo para aluno, activeTab:", activeTab);
+      console.log(
+        "[App] Renderizando conteúdo para aluno, activeTab:",
+        activeTab,
+      );
       switch (activeTab) {
         case "workouts":
-          return <WorkoutsListScreen user={user} onUserDataUpdate={handleUserDataUpdate} />;
+          return (
+            <WorkoutsListScreen
+              user={user}
+              onUserDataUpdate={handleUserDataUpdate}
+            />
+          );
 
         case "achievements":
-          return <AchievementsScreen user={user} onUserDataUpdate={handleUserDataUpdate} />;
+          return (
+            <AchievementsScreen
+              user={user}
+              onUserDataUpdate={handleUserDataUpdate}
+            />
+          );
 
         case "ranking":
           return <RankingScreen />;
@@ -183,17 +233,23 @@ export default function App() {
           return <SettingsScreen user={user} onLogout={handleLogout} />;
 
         default:
-          return <StudentDashboard user={user} setActiveTab={setActiveTab} onUserDataUpdate={handleUserDataUpdate} />;
+          return (
+            <StudentDashboard
+              user={user}
+              setActiveTab={setActiveTab}
+              onUserDataUpdate={handleUserDataUpdate}
+            />
+          );
       }
     }
-    
+
     // Se chegou aqui e não é teacher nem student, retornar null
     console.warn("[App] Role desconhecido:", user.role);
     return null;
   };
 
   const content = renderContent();
-  
+
   if (!content) {
     console.error("[App] renderContent retornou null para user:", user);
     return (

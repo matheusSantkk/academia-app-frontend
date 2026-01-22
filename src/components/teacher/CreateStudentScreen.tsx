@@ -97,14 +97,16 @@ export default function CreateStudentScreen({
     }
 
     if (!goal || !experience || !frequency) {
-      alert("Por favor, preencha todos os campos obrigatórios (objetivo, experiência e frequência)");
+      alert(
+        "Por favor, preencha todos os campos obrigatórios (objetivo, experiência e frequência)",
+      );
       return;
     }
 
     setSubmitting(true);
     try {
       // Preparar dados para o backend no formato esperado pelo CreateMemberDto
-      const memberData: any = {
+      const memberData: Record<string, unknown> = {
         name: name.trim(),
         birthDate, // Formato YYYY-MM-DD
         phone: phone.trim(),
@@ -153,10 +155,10 @@ export default function CreateStudentScreen({
       }
     } catch (error: unknown) {
       console.error("Erro ao cadastrar aluno:", error);
-      
+
       // Tratar diferentes tipos de erro
       let errorMessage = "Erro ao cadastrar aluno. Tente novamente.";
-      
+
       if (error instanceof APIError) {
         if (error.statusCode === 401) {
           errorMessage = "Sessão expirada. Por favor, faça login novamente.";
@@ -164,13 +166,17 @@ export default function CreateStudentScreen({
           errorMessage = "Você não tem permissão para cadastrar alunos.";
         } else if (error.statusCode === 400 || error.statusCode === 422) {
           // Tentar extrair mensagens de validação do backend
-          const errorData = error.data as any;
+          const errorData = (error as APIError).data as
+            | { message?: string | string[] }
+            | undefined;
           if (errorData?.message) {
-            errorMessage = Array.isArray(errorData.message) 
+            errorMessage = Array.isArray(errorData.message)
               ? errorData.message.join(", ")
               : errorData.message;
           } else {
-            errorMessage = error.message || "Dados inválidos. Verifique os campos preenchidos.";
+            errorMessage =
+              error.message ||
+              "Dados inválidos. Verifique os campos preenchidos.";
           }
         } else {
           errorMessage = error.message;
@@ -178,7 +184,7 @@ export default function CreateStudentScreen({
       } else {
         errorMessage = handleAPIError(error);
       }
-      
+
       alert(errorMessage);
     } finally {
       setSubmitting(false);
@@ -305,7 +311,9 @@ export default function CreateStudentScreen({
                 ].map((opt) => (
                   <button
                     key={opt.value}
-                    onClick={() => setGender(opt.value as any)}
+                    onClick={() =>
+                      setGender(opt.value as "male" | "female" | "other")
+                    }
                     className={`p-3 rounded-xl font-medium text-sm transition border-2 ${
                       gender === opt.value
                         ? "border-lime-400 bg-lime-400/10 text-lime-400"

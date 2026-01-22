@@ -160,8 +160,9 @@ export const mockWorkouts: Workout[] = [
   },
 ];
 
-// MOCK ACHIEVEMENTS
+// MOCK ACHIEVEMENTS - EXPANDIDO (16 conquistas)
 export const mockAchievements: Achievement[] = [
+  // Conquistas Comuns (Iniciante)
   {
     id: "a1",
     name: "Primeiro Passo",
@@ -172,31 +173,115 @@ export const mockAchievements: Achievement[] = [
   },
   {
     id: "a2",
-    name: "Guerreiro",
-    description: "Mantenha 7 dias de streak",
+    name: "Aquecendo",
+    description: "Complete 5 treinos",
     icon: "🔥",
     unlocked: true,
-    unlockedAt: "2024-02-01",
+    unlockedAt: "2024-01-20",
   },
   {
     id: "a3",
-    name: "Força Bruta",
-    description: "Bata 5 PRs em um dia",
+    name: "Consistência",
+    description: "Mantenha 3 dias de sequência",
+    icon: "📅",
+    unlocked: true,
+    unlockedAt: "2024-01-25",
+  },
+  {
+    id: "a4",
+    name: "Primeira Evolução",
+    description: "Bata seu primeiro PR",
+    icon: "📈",
+    unlocked: false,
+  },
+
+  // Conquistas Incomuns (Intermediário)
+  {
+    id: "a5",
+    name: "Guerreiro",
+    description: "Mantenha 7 dias de sequência",
+    icon: "⚔️",
+    unlocked: false,
+  },
+  {
+    id: "a6",
+    name: "Veterano",
+    description: "Complete 25 treinos",
+    icon: "🎖️",
+    unlocked: false,
+  },
+  {
+    id: "a7",
+    name: "Evolução Consistente",
+    description: "Bata 5 PRs",
     icon: "💪",
     unlocked: false,
   },
   {
-    id: "a4",
-    name: "Dedicado",
+    id: "a8",
+    name: "Maratonista",
+    description: "Treine 5 dias em uma semana",
+    icon: "🏃",
+    unlocked: false,
+  },
+
+  // Conquistas Raras (Avançado)
+  {
+    id: "a9",
+    name: "Força Bruta",
+    description: "Levante 1000kg no total em um treino",
+    icon: "🏋️",
+    unlocked: false,
+  },
+  {
+    id: "a10",
+    name: "Dedicação Total",
     description: "Complete 50 treinos",
     icon: "⭐",
     unlocked: false,
   },
   {
-    id: "a5",
+    id: "a11",
+    name: "Imparável",
+    description: "Mantenha 15 dias de sequência",
+    icon: "🌟",
+    unlocked: false,
+  },
+  {
+    id: "a12",
+    name: "Mestre dos PRs",
+    description: "Bata 15 PRs",
+    icon: "🎯",
+    unlocked: false,
+  },
+
+  // Conquistas Lendárias (Elite)
+  {
+    id: "a13",
     name: "Lendário",
     description: "Alcance nível 10",
     icon: "👑",
+    unlocked: false,
+  },
+  {
+    id: "a14",
+    name: "Centurião",
+    description: "Complete 100 treinos",
+    icon: "🛡️",
+    unlocked: false,
+  },
+  {
+    id: "a15",
+    name: "Imortal",
+    description: "Mantenha 30 dias de sequência",
+    icon: "🔱",
+    unlocked: false,
+  },
+  {
+    id: "a16",
+    name: "Titã",
+    description: "Alcance nível 20",
+    icon: "⚡",
     unlocked: false,
   },
 ];

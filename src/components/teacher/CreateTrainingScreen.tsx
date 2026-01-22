@@ -39,7 +39,7 @@ export default function CreateTrainingScreen({
   }, []);
 
   const filtered = students.filter((s) =>
-    s.name.toLowerCase().includes(query.trim().toLowerCase())
+    s.name.toLowerCase().includes(query.trim().toLowerCase()),
   );
 
   const selectedStudent =
@@ -52,7 +52,8 @@ export default function CreateTrainingScreen({
       return;
     }
 
-    api.getTraining(selectedStudentId)
+    api
+      .getTraining(selectedStudentId)
       .then((ws) => setTraining(ws || []))
       .catch((error) => {
         console.error("[CreateTrainingScreen] Erro ao buscar treinos:", error);
@@ -98,7 +99,7 @@ export default function CreateTrainingScreen({
   function updateExercise(
     wIdx: number,
     exIdx: number,
-    patch: Partial<Exercise>
+    patch: Partial<Exercise>,
   ) {
     const workCopy = training.map((w) => ({
       ...w,
@@ -133,10 +134,14 @@ export default function CreateTrainingScreen({
       setTimeout(() => {
         setSaved(false);
         // Recarregar os treinos após salvar
-        api.getTraining(selectedStudentId)
+        api
+          .getTraining(selectedStudentId)
           .then((ws) => setTraining(ws || []))
           .catch((error) => {
-            console.error("[CreateTrainingScreen] Erro ao recarregar treinos:", error);
+            console.error(
+              "[CreateTrainingScreen] Erro ao recarregar treinos:",
+              error,
+            );
           });
       }, 2000);
     } catch (error) {
@@ -149,29 +154,29 @@ export default function CreateTrainingScreen({
 
   return (
     <div
-      className={`min-h-screen ${colors.background} ${colors.text} px-4 py-6 pb-24`}
+      className={`min-h-screen ${colors.background} ${colors.text} overflow-y-auto`}
     >
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-sm md:max-w-3xl mx-auto px-4 py-4 pb-32">
         {/* Header */}
         <div
-          className={`${colors.card} rounded-b-2xl p-5 mb-6 shadow-lg border ${colors.border}`}
+          className={`${colors.card} rounded-2xl p-4 md:p-6 mb-6 shadow-lg border ${colors.border}`}
         >
           <div className="flex items-center gap-3 mb-4">
             <button
               onClick={() => setActiveTab("dashboard")}
-              className="p-2 rounded-lg hover:bg-lime-400/10 transition active:scale-95"
+              className={`p-2 rounded-lg hover:bg-lime-400/10 transition active:scale-95 ${colors.text}`}
               aria-label="Voltar"
             >
               <ArrowLeft size={20} />
             </button>
 
             <div className="flex-1">
-              <h1 className="text-xl font-bold">
+              <h1 className="text-xl md:text-2xl font-bold">
                 {isEditMode
                   ? "Editar Plano de Treino"
                   : "Criar Plano de Treino"}
               </h1>
-              <p className={`${colors.textSecondary} text-sm`}>
+              <p className={`${colors.textSecondary} text-sm mt-1`}>
                 {isEditMode
                   ? `Editando treino de ${selectedStudent?.name}`
                   : "Selecione um aluno para começar"}
@@ -180,239 +185,257 @@ export default function CreateTrainingScreen({
           </div>
         </div>
 
-        {/* Card de Estudantess (when editing) */}
+        {/* Card do Aluno (quando editando) */}
         {isEditMode && selectedStudent && (
-          <div
-            className={`${colors.card} border ${colors.border} p-5 rounded-2xl mb-6 shadow-md`}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-14 h-14 bg-gradient-to-br from-lime-400 to-lime-500 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-md`}
+          <div className="space-y-6">
+            <div
+              className={`${colors.card} border ${colors.border} p-4 md:p-6 rounded-2xl shadow-md`}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-16 h-16 bg-linear-to-br from-lime-400 to-lime-500 rounded-xl flex items-center justify-center text-white font-bold text-2xl shadow-md`}
+                  >
+                    {selectedStudent.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="font-bold text-xl">
+                      {selectedStudent.name}
+                    </div>
+                    <div className={`text-sm ${colors.textSecondary} mt-1`}>
+                      {selectedStudent.age} anos • Nível{" "}
+                      {selectedStudent.level ?? 1}
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (setSelectedStudentId)
+                      setSelectedStudentId(selectedStudent.id);
+                    setActiveTab("student-detail");
+                  }}
+                  className="text-sm text-blue-400 hover:underline font-medium"
                 >
-                  {selectedStudent.name.charAt(0)}
-                </div>
-                <div>
-                  <div className="font-bold text-lg">
-                    {selectedStudent.name}
-                  </div>
-                  <div className={`text-sm ${colors.textSecondary}`}>
-                    {selectedStudent.age} anos • Nível{" "}
-                    {selectedStudent.level ?? 1}
-                  </div>
-                </div>
+                  Ver Perfil
+                </button>
               </div>
 
-              <button
-                onClick={() => {
-                  if (setSelectedStudentId)
-                    setSelectedStudentId(selectedStudent.id);
-                  setActiveTab("student-detail");
-                }}
-                className="text-sm text-blue-400 hover:underline"
-              >
-                Ver Perfil
-              </button>
-            </div>
+              {/* Training Editor */}
+              <div className="space-y-5 pb-6">
+                {training.length === 0 && (
+                  <div className={`${colors.input} rounded-xl p-8 text-center`}>
+                    <Dumbbell
+                      className={`w-14 h-14 ${colors.textSecondary} mx-auto mb-3`}
+                    />
+                    <p className={`${colors.textSecondary} text-sm`}>
+                      Nenhum treino criado ainda. Clique no botão abaixo para
+                      começar.
+                    </p>
+                  </div>
+                )}
 
-            {/* Training Editor */}
-            <div className="mt-6 space-y-4">
-              {training.length === 0 && (
-                <div className={`${colors.input} rounded-xl p-6 text-center`}>
-                  <Dumbbell
-                    className={`w-12 h-12 ${colors.textSecondary} mx-auto mb-3`}
-                  />
-                  <p className={`${colors.textSecondary} text-sm`}>
-                    Nenhum treino criado ainda
-                  </p>
-                </div>
-              )}
-
-              {training.map((w, wIdx) => (
-                <div
-                  key={w.id}
-                  className={`${colors.card} border-2 ${colors.border} rounded-2xl p-5 shadow-sm`}
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-lime-400 rounded-lg flex items-center justify-center text-slate-900 font-bold shadow-sm">
-                        {w.type}
-                      </div>
-                      <div>
-                        <input
-                          value={w.name}
-                          onChange={(e) => {
-                            const copy = [...training];
-                            copy[wIdx].name = e.target.value;
-                            setTraining(copy);
-                          }}
-                          className={`font-bold text-lg ${colors.input} ${colors.text} rounded-lg px-3 py-1 border ${colors.border} focus:border-lime-400 focus:outline-none`}
-                        />
-                        <p className={`text-xs ${colors.textSecondary} mt-1`}>
-                          {w.exercises.length} exercícios
-                        </p>
+                {training.map((w, wIdx) => (
+                  <div
+                    key={w.id}
+                    className={`${colors.card} border-2 ${colors.border} rounded-2xl p-4 md:p-6 shadow-sm hover:border-lime-400/50 transition-colors`}
+                  >
+                    <div className="flex items-center justify-between mb-5">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-12 h-12 bg-lime-400 rounded-xl flex items-center justify-center text-slate-900 font-bold text-lg shadow-sm">
+                          {w.type}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-3">
+                            <input
+                              value={w.name}
+                              onChange={(e) => {
+                                const copy = [...training];
+                                copy[wIdx].name = e.target.value;
+                                setTraining(copy);
+                              }}
+                              className={`font-semibold text-base md:text-lg ${colors.input} ${colors.text} rounded-lg px-3 py-2 border ${colors.border} focus:border-lime-400 focus:outline-none w-full min-w-0`}
+                              placeholder="Nome do treino"
+                            />
+                            <button
+                              onClick={() => removeWorkout(wIdx)}
+                              className="flex items-center justify-center px-3 py-2 md:py-2.5 rounded-lg text-red-400 hover:bg-red-400/10 transition"
+                              title="Remover treino"
+                            >
+                              <Trash2 size={20} />
+                            </button>
+                          </div>
+                          <p
+                            className={`text-xs ${colors.textSecondary} mt-1 px-3`}
+                          >
+                            {w.exercises.length} exercício
+                            {w.exercises.length !== 1 ? "s" : ""}
+                          </p>
+                        </div>
                       </div>
                     </div>
+
+                    <div className="space-y-4">
+                      {(w.exercises || []).map((ex, exIdx) => (
+                        <div
+                          key={ex.id}
+                          className={`${colors.input} rounded-xl p-4 border ${colors.border} hover:border-lime-400/30 transition-colors`}
+                        >
+                          <div className="flex items-start gap-3 mb-4">
+                            <div
+                              className={`w-9 h-9 rounded-lg ${colors.card} border ${colors.border} flex items-center justify-center text-sm font-bold shrink-0`}
+                            >
+                              {exIdx + 1}
+                            </div>
+                            <input
+                              value={ex.name}
+                              onChange={(e) =>
+                                updateExercise(wIdx, exIdx, {
+                                  name: e.target.value,
+                                })
+                              }
+                              placeholder="Nome do exercício"
+                              className={`flex-1 min-w-0 ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 border ${colors.border} focus:border-lime-400 focus:outline-none text-sm font-medium`}
+                            />
+                            <button
+                              onClick={() => removeExercise(wIdx, exIdx)}
+                              className="p-2 rounded-lg text-red-400 hover:bg-red-400/10 transition shrink-0"
+                              title="Remover exercício"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div>
+                              <label
+                                className={`text-xs ${colors.textSecondary} mb-1.5 block font-medium`}
+                              >
+                                Séries
+                              </label>
+                              <input
+                                type="number"
+                                value={String(ex.series)}
+                                onChange={(e) =>
+                                  updateExercise(wIdx, exIdx, {
+                                    series: Number(e.target.value) || 0,
+                                  })
+                                }
+                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                                min="1"
+                              />
+                            </div>
+                            <div>
+                              <label
+                                className={`text-xs ${colors.textSecondary} mb-1.5 block font-medium`}
+                              >
+                                Repetições
+                              </label>
+                              <input
+                                value={ex.reps}
+                                onChange={(e) =>
+                                  updateExercise(wIdx, exIdx, {
+                                    reps: e.target.value,
+                                  })
+                                }
+                                placeholder="8-12"
+                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                              />
+                            </div>
+                            <div>
+                              <label
+                                className={`text-xs ${colors.textSecondary} mb-1.5 block font-medium`}
+                              >
+                                Peso (kg)
+                              </label>
+                              <input
+                                type="number"
+                                value={String(ex.weight)}
+                                onChange={(e) =>
+                                  updateExercise(wIdx, exIdx, {
+                                    weight: Number(e.target.value) || 0,
+                                  })
+                                }
+                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                                min="0"
+                                step="2.5"
+                              />
+                            </div>
+                            <div>
+                              <label
+                                className={`text-xs ${colors.textSecondary} mb-1.5 block font-medium`}
+                              >
+                                Descanso
+                              </label>
+                              <input
+                                value={ex.rest}
+                                onChange={(e) =>
+                                  updateExercise(wIdx, exIdx, {
+                                    rest: e.target.value,
+                                  })
+                                }
+                                placeholder="60s"
+                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
                     <button
-                      onClick={() => removeWorkout(wIdx)}
-                      className="p-2 rounded-lg text-red-400 hover:bg-red-400/10 transition"
+                      onClick={() => addExercise(wIdx)}
+                      className={`w-full mt-4 py-2.5 md:py-3 ${colors.input} border-2 border-dashed ${colors.border} rounded-xl font-medium text-sm hover:border-lime-400 hover:bg-lime-400/5 transition flex items-center justify-center gap-2 active:scale-[0.98]`}
                     >
-                      <Trash2 size={18} />
+                      <Plus size={18} />
+                      Adicionar Exercício
                     </button>
                   </div>
+                ))}
 
-                  <div className="space-y-3">
-                    {(w.exercises || []).map((ex, exIdx) => (
-                      <div
-                        key={ex.id}
-                        className={`${colors.input} rounded-xl p-4 border ${colors.border}`}
-                      >
-                        <div className="flex items-start gap-3 mb-3">
-                          <div
-                            className={`w-8 h-8 rounded-lg ${colors.card} flex items-center justify-center text-xs font-bold shrink-0`}
-                          >
-                            {exIdx + 1}
-                          </div>
-                          <input
-                            value={ex.name}
-                            onChange={(e) =>
-                              updateExercise(wIdx, exIdx, {
-                                name: e.target.value,
-                              })
-                            }
-                            placeholder="Nome do exercício"
-                            className={`flex-1 ${colors.card} ${colors.text} rounded-lg px-3 py-2 border ${colors.border} focus:border-lime-400 focus:outline-none text-sm font-medium`}
-                          />
-                          <button
-                            onClick={() => removeExercise(wIdx, exIdx)}
-                            className="p-2 rounded-lg text-red-400 hover:bg-red-400/10 transition shrink-0"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-4 gap-2">
-                          <div>
-                            <label
-                              className={`text-xs ${colors.textSecondary} mb-1 block`}
-                            >
-                              Séries
-                            </label>
-                            <input
-                              type="number"
-                              value={String(ex.series)}
-                              onChange={(e) =>
-                                updateExercise(wIdx, exIdx, {
-                                  series: Number(e.target.value) || 0,
-                                })
-                              }
-                              className={`w-full ${colors.card} ${colors.text} rounded-lg px-2 py-2 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
-                            />
-                          </div>
-                          <div>
-                            <label
-                              className={`text-xs ${colors.textSecondary} mb-1 block`}
-                            >
-                              Reps
-                            </label>
-                            <input
-                              value={ex.reps}
-                              onChange={(e) =>
-                                updateExercise(wIdx, exIdx, {
-                                  reps: e.target.value,
-                                })
-                              }
-                              placeholder="8-12"
-                              className={`w-full ${colors.card} ${colors.text} rounded-lg px-2 py-2 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
-                            />
-                          </div>
-                          <div>
-                            <label
-                              className={`text-xs ${colors.textSecondary} mb-1 block`}
-                            >
-                              Peso (kg)
-                            </label>
-                            <input
-                              type="number"
-                              value={String(ex.weight)}
-                              onChange={(e) =>
-                                updateExercise(wIdx, exIdx, {
-                                  weight: Number(e.target.value) || 0,
-                                })
-                              }
-                              className={`w-full ${colors.card} ${colors.text} rounded-lg px-2 py-2 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
-                            />
-                          </div>
-                          <div>
-                            <label
-                              className={`text-xs ${colors.textSecondary} mb-1 block`}
-                            >
-                              Descanso
-                            </label>
-                            <input
-                              value={ex.rest}
-                              onChange={(e) =>
-                                updateExercise(wIdx, exIdx, {
-                                  rest: e.target.value,
-                                })
-                              }
-                              placeholder="60s"
-                              className={`w-full ${colors.card} ${colors.text} rounded-lg px-2 py-2 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                <button
+                  onClick={addWorkout}
+                  className={`w-full py-3 md:py-4 ${colors.input} border-2 border-dashed ${colors.border} rounded-xl font-semibold hover:border-lime-400 hover:bg-lime-400/5 transition flex items-center justify-center gap-2 active:scale-[0.98]`}
+                >
+                  <Plus size={20} />
+                  Adicionar Novo Treino
+                </button>
 
+                <div className="flex items-center gap-3 sticky bottom-0 bg-linear-to-t from-[#0B1D33] via-[#0B1D33] to-transparent pt-6 pb-4 -mx-4 px-4">
                   <button
-                    onClick={() => addExercise(wIdx)}
-                    className={`w-full mt-3 py-3 ${colors.input} border-2 border-dashed ${colors.border} rounded-xl font-medium text-sm hover:border-lime-400 hover:bg-lime-400/5 transition flex items-center justify-center gap-2`}
+                    onClick={save}
+                    disabled={saving || training.length === 0}
+                    className={`flex-1 py-4 md:py-5 rounded-2xl text-sm md:text-base font-bold shadow-lg transition active:scale-[0.98] flex items-center justify-center gap-3 ${
+                      saved
+                        ? "bg-green-500 text-white"
+                        : training.length === 0
+                          ? `${colors.input} ${colors.textSecondary} cursor-not-allowed`
+                          : `${colors.button}`
+                    }`}
                   >
-                    <Plus size={18} />
-                    Adicionar Exercício
+                    {saving ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+                        Salvando...
+                      </>
+                    ) : saved ? (
+                      <>
+                        <Check size={20} />
+                        Salvo com Sucesso!
+                      </>
+                    ) : (
+                      <>
+                        <Save size={20} />
+                        Salvar Treino
+                      </>
+                    )}
                   </button>
                 </div>
-              ))}
-
-              <button
-                onClick={addWorkout}
-                className={`w-full py-4 ${colors.input} border-2 border-dashed ${colors.border} rounded-xl font-semibold hover:border-lime-400 hover:bg-lime-400/5 transition flex items-center justify-center gap-2`}
-              >
-                <Plus size={20} />
-                Adicionar Novo Treino
-              </button>
-
-              <div className="flex items-center gap-3 pt-2">
-                <button
-                  onClick={save}
-                  disabled={saving || training.length === 0}
-                  className={`flex-1 py-4 rounded-xl font-bold shadow-lg transition active:scale-[0.98] flex items-center justify-center gap-2 ${
-                    saved ? "bg-green-500 text-white" : `${colors.button}`
-                  }`}
-                >
-                  {saving ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
-                      Salvando...
-                    </>
-                  ) : saved ? (
-                    <>
-                      <Check size={20} />
-                      Salvo com Sucesso!
-                    </>
-                  ) : (
-                    <>
-                      <Save size={20} />
-                      Salvar Treino
-                    </>
-                  )}
-                </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Lista de estudantes (when not editing) */}
+        {/* Lista de estudantes (quando não está editando) */}
         {!isEditMode && (
           <>
             <div className="mb-6">
@@ -434,14 +457,14 @@ export default function CreateTrainingScreen({
               {filtered.map((student) => (
                 <div
                   key={student.id}
-                  className={`${colors.card} border ${colors.border} p-5 rounded-xl shadow-md transition hover:border-lime-400 cursor-pointer`}
+                  className={`${colors.card} border ${colors.border} p-5 rounded-xl shadow-md transition hover:border-lime-400 cursor-pointer active:scale-[0.98]`}
                   onClick={() => {
                     setSelectedStudentId?.(student.id);
                   }}
                 >
                   <div className="flex items-center gap-4">
                     <div
-                      className={`w-14 h-14 bg-gradient-to-br from-lime-400 to-lime-500 rounded-xl flex items-center justify-center ${colors.textInverse} font-bold text-lg shadow-md`}
+                      className={`w-14 h-14 bg-linear-to-br from-lime-400 to-lime-500 rounded-xl flex items-center justify-center ${colors.textInverse} font-bold text-lg shadow-md`}
                     >
                       {student.name.charAt(0)}
                     </div>

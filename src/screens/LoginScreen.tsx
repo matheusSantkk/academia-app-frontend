@@ -1,24 +1,30 @@
 import { useState, useEffect } from "react";
-import { Dumbbell, Eye, EyeOff, AlertCircle, Wifi, WifiOff } from "lucide-react";
+import {
+  Dumbbell,
+  Eye,
+  EyeOff,
+  AlertCircle,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 import type { UserData } from "../types";
 import { api } from "../api";
 import { APIError, handleAPIError } from "../api/client";
 import { isMockMode, API_CONFIG } from "../api/config";
 
-const LoginScreen: React.FC<{ 
+const LoginScreen: React.FC<{
   onLogin: (user: UserData) => void;
   userType?: "student" | "teacher";
-}> = ({
-  onLogin,
-  userType,
-}) => {
+}> = ({ onLogin, userType }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [touched, setTouched] = useState({ email: false, password: false });
-  const [serverStatus, setServerStatus] = useState<"checking" | "online" | "offline" | null>(null);
+  const [serverStatus, setServerStatus] = useState<
+    "checking" | "online" | "offline" | null
+  >(null);
   const [isServerMode, setIsServerMode] = useState(false);
 
   const validateEmail = (email: string) => {
@@ -33,7 +39,7 @@ const LoginScreen: React.FC<{
     const checkServerMode = () => {
       const mode = !isMockMode();
       setIsServerMode(mode);
-      
+
       if (mode) {
         setServerStatus("checking");
         // Tentar fazer uma requisição simples para verificar se o servidor está online
@@ -82,10 +88,15 @@ const LoginScreen: React.FC<{
       const normalizedEmail = email.trim().toLowerCase();
       const normalizedPassword = password.trim();
 
-      console.log("Tentando login com email:", normalizedEmail, "Tipo:", userType || "auto");
+      console.log(
+        "Tentando login com email:",
+        normalizedEmail,
+        "Tipo:",
+        userType || "auto",
+      );
 
       let user: UserData & { needsPasswordChange?: boolean };
-      
+
       // Se userType não foi especificado, tentar detectar automaticamente
       // ou tentar primeiro como professor, depois como aluno
       if (!userType) {
@@ -95,23 +106,32 @@ const LoginScreen: React.FC<{
           if (user.role !== "teacher") {
             throw new Error("Não é professor");
           }
-        } catch (error) {
+        } catch {
           // Se falhar, tentar como aluno
           console.log("Tentando login como aluno...");
           const memberApi = api as typeof api & {
-            memberLogin: (email: string, password: string) => Promise<UserData & { needsPasswordChange?: boolean }>;
+            memberLogin: (
+              email: string,
+              password: string,
+            ) => Promise<UserData & { needsPasswordChange?: boolean }>;
           };
-          user = await memberApi.memberLogin(normalizedEmail, normalizedPassword);
+          user = await memberApi.memberLogin(
+            normalizedEmail,
+            normalizedPassword,
+          );
         }
       } else if (userType === "teacher") {
         user = await api.login(normalizedEmail, normalizedPassword);
       } else {
         const memberApi = api as typeof api & {
-          memberLogin: (email: string, password: string) => Promise<UserData & { needsPasswordChange?: boolean }>;
+          memberLogin: (
+            email: string,
+            password: string,
+          ) => Promise<UserData & { needsPasswordChange?: boolean }>;
         };
         user = await memberApi.memberLogin(normalizedEmail, normalizedPassword);
       }
-      
+
       // Verificar se o login retornou um usuário válido
       if (!user || !user.id) {
         setError("Resposta inválida do servidor. Tente novamente.");
@@ -123,14 +143,18 @@ const LoginScreen: React.FC<{
       onLogin(user);
     } catch (error) {
       let errorMessage = "Erro ao fazer login. Tente novamente.";
-      
+
       if (error instanceof APIError) {
         if (error.statusCode === 401) {
-          errorMessage = "Email ou senha incorretos. Verifique suas credenciais.";
+          errorMessage =
+            "Email ou senha incorretos. Verifique suas credenciais.";
         } else if (error.statusCode === 404) {
-          errorMessage = "Instrutor não encontrado. Verifique se o email está correto ou se o cadastro foi realizado.";
+          errorMessage =
+            "Instrutor não encontrado. Verifique se o email está correto ou se o cadastro foi realizado.";
         } else if (error.statusCode === 0) {
-          errorMessage = "Erro de conexão. Verifique se o servidor está rodando em " + API_CONFIG.BASE_URL;
+          errorMessage =
+            "Erro de conexão. Verifique se o servidor está rodando em " +
+            API_CONFIG.BASE_URL;
         } else if (error.statusCode === 422) {
           errorMessage = "Dados inválidos. Verifique o formato do email.";
         } else {
@@ -139,7 +163,7 @@ const LoginScreen: React.FC<{
       } else {
         errorMessage = handleAPIError(error);
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -154,7 +178,9 @@ const LoginScreen: React.FC<{
       // Para aluno, não podemos preencher automaticamente pois precisa do email e telefone do aluno cadastrado
       setEmail("");
       setPassword("");
-      setError("Para login de aluno, use o email cadastrado e a senha padrão: 123");
+      setError(
+        "Para login de aluno, use o email cadastrado e a senha padrão: 123",
+      );
     }
   };
 
@@ -168,7 +194,7 @@ const LoginScreen: React.FC<{
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">FormaMais</h1>
           <p className="text-slate-400">Seu treino, seu progresso</p>
-          
+
           {/* Indicador de Status do Servidor */}
           {isServerMode && serverStatus !== null && (
             <div className="mt-4 flex items-center justify-center gap-2 text-sm">
@@ -319,10 +345,9 @@ const LoginScreen: React.FC<{
         {/* Footer Info */}
         <div className="mt-8 text-center space-y-2">
           <p className="text-slate-500 text-xs">
-            {isServerMode 
+            {isServerMode
               ? "Faça login com suas credenciais cadastradas no sistema"
-              : "Use as contas de teste acima ou qualquer email válido"
-            }
+              : "Use as contas de teste acima ou qualquer email válido"}
           </p>
           {isServerMode && (
             <div className="space-y-1">
