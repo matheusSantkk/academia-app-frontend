@@ -162,10 +162,27 @@ export default function CreateTemplatesScreen({ setActiveTab }: Props) {
                 className={`${colors.card} border-2 ${colors.border} rounded-2xl p-5 md:p-6 shadow-lg hover:border-lime-400/60 hover:shadow-xl transition-all duration-200`}
               >
                 <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
+                  <div 
+                    className="flex-1 cursor-pointer"
+                    onClick={() => toggleTemplateExpanded(template.id)}
+                  >
                     <div className="flex items-center gap-3 mb-2">
                       <Sparkles className="w-5 h-5 text-lime-400" />
                       <h3 className="font-bold text-lg md:text-xl">{template.title}</h3>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleTemplateExpanded(template.id);
+                        }}
+                        className="p-1 rounded-lg text-lime-400 hover:bg-lime-400/10 transition"
+                        title={expandedTemplates.has(template.id) ? "Recolher exercícios" : "Expandir exercícios"}
+                      >
+                        {expandedTemplates.has(template.id) ? (
+                          <ChevronUp size={16} />
+                        ) : (
+                          <ChevronDown size={16} />
+                        )}
+                      </button>
                     </div>
                     {template.description && (
                       <p className={`${colors.textSecondary} text-sm mb-3`}>
@@ -183,18 +200,8 @@ export default function CreateTemplatesScreen({ setActiveTab }: Props) {
                   </div>
                   <div className="flex gap-2">
                     <button
-                      onClick={() => toggleTemplateExpanded(template.id)}
-                      className="p-2 rounded-lg text-lime-400 hover:bg-lime-400/10 transition"
-                      title={expandedTemplates.has(template.id) ? "Recolher exercícios" : "Expandir exercícios"}
-                    >
-                      {expandedTemplates.has(template.id) ? (
-                        <ChevronUp size={18} />
-                      ) : (
-                        <ChevronDown size={18} />
-                      )}
-                    </button>
-                    <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setEditingTemplate(template);
                         setShowCreateModal(true);
                       }}
@@ -204,7 +211,10 @@ export default function CreateTemplatesScreen({ setActiveTab }: Props) {
                       <Edit size={18} />
                     </button>
                     <button
-                      onClick={() => handleDelete(template.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(template.id);
+                      }}
                       className="p-2 rounded-lg text-red-400 hover:bg-red-400/10 transition"
                       title="Deletar template"
                     >
@@ -215,7 +225,7 @@ export default function CreateTemplatesScreen({ setActiveTab }: Props) {
 
                 {/* Lista de Exercícios do Template */}
                 {expandedTemplates.has(template.id) && (
-                  <div className="space-y-2 mt-4 pt-4 border-t border-lime-400/20">
+                  <div className="space-y-2 mt-4 pt-4 border-t border-lime-400/20 animate-fade-in">
                     {template.items.map((item, idx) => (
                     <div
                       key={item.id}
