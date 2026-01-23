@@ -22,6 +22,7 @@ import AchievementsScreen from "./components/student/AchievementsScreen";
 import TeacherDashboard from "./components/teacher/TeacherDashboard";
 import StudentDetailScreen from "./components/teacher/StudentDetailScreen";
 import CreateTrainingScreen from "./components/teacher/CreateTrainingScreen";
+import CreateTemplatesScreen from "./components/teacher/CreateTemplatesScreen";
 import CreateStudentScreen from "./components/teacher/CreateStudentScreen";
 import StudentsListScreen from "./components/teacher/StudentsListScreen";
 
@@ -161,6 +162,15 @@ export default function App() {
           );
 
         case "create-training":
+          // Tela exclusiva para gerenciar templates
+          return (
+            <CreateTemplatesScreen
+              setActiveTab={setActiveTab}
+            />
+          );
+
+        case "edit-training":
+          // Tela para criar/editar treino personalizado de um aluno específico
           return (
             <CreateTrainingScreen
               setActiveTab={setActiveTab}

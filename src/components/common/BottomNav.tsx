@@ -1,5 +1,5 @@
 import React from "react";
-import { Dumbbell, Trophy, Crown, User, Home, Settings } from "lucide-react";
+import { Dumbbell, Trophy, Crown, User, Home, Settings, FileText } from "lucide-react";
 import { useTheme } from "../../theme/context";
 import { getThemeColors } from "../../theme/colors";
 
@@ -43,6 +43,20 @@ const BottomNav: React.FC<BottomNavProps> = ({
           >
             <User className="w-6 h-6" />
             <span className="text-xs font-medium">Alunos</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab("create-training");
+              // Limpar selectedStudentId ao acessar templates
+              // Isso garante que sempre mostre a tela de templates, não de criar treino personalizado
+            }}
+            className={`flex flex-col items-center gap-1 ${
+              activeTab === "create-training" ? "text-lime-400" : colors.textSecondary
+            }`}
+          >
+            <FileText className="w-6 h-6" />
+            <span className="text-xs font-medium">Templates</span>
           </button>
 
           <button

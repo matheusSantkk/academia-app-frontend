@@ -11,6 +11,10 @@ import {
   FileText,
   Sparkles,
   X,
+  Clock,
+  Weight,
+  Repeat,
+  Activity,
 } from "lucide-react";
 import type { StudentData, Workout, Exercise, WorkoutTemplate } from "../../types";
 import { api } from "../../api";
@@ -318,53 +322,53 @@ export default function CreateTrainingScreen({
                 {training.map((w, wIdx) => (
                   <div
                     key={w.id}
-                    className={`${colors.card} border-2 ${colors.border} rounded-2xl p-4 md:p-6 shadow-sm hover:border-lime-400/50 transition-colors`}
+                    className={`${colors.card} border-2 ${colors.border} rounded-2xl p-5 md:p-6 shadow-lg hover:border-lime-400/60 hover:shadow-xl transition-all duration-200`}
                   >
-                    <div className="flex items-center justify-between mb-5">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-12 h-12 bg-lime-400 rounded-xl flex items-center justify-center text-slate-900 font-bold text-lg shadow-sm">
+                    {/* Header do Treino */}
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="flex items-center gap-4 flex-1 min-w-0">
+                        <div className="w-14 h-14 bg-gradient-to-br from-lime-400 to-lime-500 rounded-xl flex items-center justify-center text-slate-900 font-bold text-xl shadow-md">
                           {w.type}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3">
-                            <input
-                              value={w.name}
-                              onChange={(e) => {
-                                const copy = [...training];
-                                copy[wIdx].name = e.target.value;
-                                setTraining(copy);
-                              }}
-                              className={`font-semibold text-base md:text-lg ${colors.input} ${colors.text} rounded-lg px-3 py-2 border ${colors.border} focus:border-lime-400 focus:outline-none w-full min-w-0`}
-                              placeholder="Nome do treino"
-                            />
-                            <button
-                              onClick={() => removeWorkout(wIdx)}
-                              className="flex items-center justify-center px-3 py-2 md:py-2.5 rounded-lg text-red-400 hover:bg-red-400/10 transition"
-                              title="Remover treino"
-                            >
-                              <Trash2 size={20} />
-                            </button>
+                          <input
+                            value={w.name}
+                            onChange={(e) => {
+                              const copy = [...training];
+                              copy[wIdx].name = e.target.value;
+                              setTraining(copy);
+                            }}
+                            className={`font-bold text-lg md:text-xl ${colors.input} ${colors.text} rounded-lg px-4 py-2.5 border-2 ${colors.border} focus:border-lime-400 focus:outline-none w-full min-w-0 bg-transparent`}
+                            placeholder="Nome do treino"
+                          />
+                          <div className="flex items-center gap-4 mt-2">
+                            <div className="flex items-center gap-1.5 text-xs text-lime-400">
+                              <Activity size={14} />
+                              <span className={colors.textSecondary}>
+                                {w.exercises.length} exercício{w.exercises.length !== 1 ? "s" : ""}
+                              </span>
+                            </div>
                           </div>
-                          <p
-                            className={`text-xs ${colors.textSecondary} mt-1 px-3`}
-                          >
-                            {w.exercises.length} exercício
-                            {w.exercises.length !== 1 ? "s" : ""}
-                          </p>
                         </div>
                       </div>
+                      <button
+                        onClick={() => removeWorkout(wIdx)}
+                        className="flex items-center justify-center p-2.5 rounded-lg text-red-400 hover:bg-red-400/10 transition shrink-0"
+                        title="Remover treino"
+                      >
+                        <Trash2 size={20} />
+                      </button>
                     </div>
 
-                    <div className="space-y-4">
+                    {/* Lista de Exercícios */}
+                    <div className="space-y-3">
                       {(w.exercises || []).map((ex, exIdx) => (
                         <div
                           key={ex.id}
-                          className={`${colors.input} rounded-xl p-4 border ${colors.border} hover:border-lime-400/30 transition-colors`}
+                          className={`${colors.input} rounded-xl p-4 border ${colors.border} hover:border-lime-400/50 hover:shadow-md transition-all duration-200`}
                         >
-                          <div className="flex items-start gap-3 mb-4">
-                            <div
-                              className={`w-9 h-9 rounded-lg ${colors.card} border ${colors.border} flex items-center justify-center text-sm font-bold shrink-0`}
-                            >
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className="w-10 h-10 rounded-lg bg-lime-400/20 border border-lime-400/30 flex items-center justify-center text-sm font-bold text-lime-400 shrink-0">
                               {exIdx + 1}
                             </div>
                             <input
@@ -375,7 +379,7 @@ export default function CreateTrainingScreen({
                                 })
                               }
                               placeholder="Nome do exercício"
-                              className={`flex-1 min-w-0 ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 border ${colors.border} focus:border-lime-400 focus:outline-none text-sm font-medium`}
+                              className={`flex-1 min-w-0 ${colors.card} ${colors.text} rounded-lg px-3 py-2 border ${colors.border} focus:border-lime-400 focus:outline-none text-sm font-semibold`}
                             />
                             <button
                               onClick={() => removeExercise(wIdx, exIdx)}
@@ -386,10 +390,9 @@ export default function CreateTrainingScreen({
                             </button>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div>
-                              <label
-                                className={`text-xs ${colors.textSecondary} mb-1.5 block font-medium`}
-                              >
+                            <div className="space-y-1.5">
+                              <label className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}>
+                                <Repeat size={12} />
                                 Séries
                               </label>
                               <input
@@ -400,14 +403,13 @@ export default function CreateTrainingScreen({
                                     series: Number(e.target.value) || 0,
                                   })
                                 }
-                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
                                 min="1"
                               />
                             </div>
-                            <div>
-                              <label
-                                className={`text-xs ${colors.textSecondary} mb-1.5 block font-medium`}
-                              >
+                            <div className="space-y-1.5">
+                              <label className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}>
+                                <Activity size={12} />
                                 Repetições
                               </label>
                               <input
@@ -418,13 +420,12 @@ export default function CreateTrainingScreen({
                                   })
                                 }
                                 placeholder="8-12"
-                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
                               />
                             </div>
-                            <div>
-                              <label
-                                className={`text-xs ${colors.textSecondary} mb-1.5 block font-medium`}
-                              >
+                            <div className="space-y-1.5">
+                              <label className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}>
+                                <Weight size={12} />
                                 Peso (kg)
                               </label>
                               <input
@@ -435,15 +436,14 @@ export default function CreateTrainingScreen({
                                     weight: Number(e.target.value) || 0,
                                   })
                                 }
-                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
                                 min="0"
                                 step="2.5"
                               />
                             </div>
-                            <div>
-                              <label
-                                className={`text-xs ${colors.textSecondary} mb-1.5 block font-medium`}
-                              >
+                            <div className="space-y-1.5">
+                              <label className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}>
+                                <Clock size={12} />
                                 Descanso
                               </label>
                               <input
@@ -454,7 +454,7 @@ export default function CreateTrainingScreen({
                                   })
                                 }
                                 placeholder="60s"
-                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-semibold border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
                               />
                             </div>
                           </div>

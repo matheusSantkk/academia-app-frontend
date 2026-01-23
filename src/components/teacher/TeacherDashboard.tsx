@@ -175,9 +175,9 @@ export default function TeacherDashboard({
               </div>
 
               <div className="flex flex-col text-left flex-1">
-                <span className="font-semibold">Criar Treino</span>
+                <span className="font-semibold">Templates de Treino</span>
                 <span className={`${colors.textSecondary} text-sm`}>
-                  Monte planos personalizados
+                  Gerencie templates reutilizáveis
                 </span>
               </div>
             </button>
@@ -311,7 +311,7 @@ export default function TeacherDashboard({
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedStudentId(student.id);
-                        setActiveTab("create-training");
+                        setActiveTab("edit-training");
                       }}
                       className={`${colors.button} flex-1 py-2 rounded-lg text-sm font-medium shadow-sm transition active:scale-[0.98]`}
                     >

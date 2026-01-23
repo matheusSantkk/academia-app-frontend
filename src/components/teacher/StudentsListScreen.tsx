@@ -181,7 +181,7 @@ export default function StudentsListScreen({
                   <button
                     onClick={() => {
                       setSelectedStudentId(student.id);
-                      setActiveTab("create-training");
+                      setActiveTab("edit-training");
                     }}
                     className={`${colors.button} flex-1 py-2.5 rounded-lg text-sm font-medium shadow-sm transition flex items-center justify-center gap-2 active:scale-95`}
                   >
