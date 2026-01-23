@@ -645,6 +645,8 @@ const serverAPI = {
       currentStreak?: number;
     };
   }> => {
+    // O memberId é extraído do token JWT no backend, não deve ser enviado no body
+    // O DTO só aceita workoutId
     return httpClient.post<{
       id: string;
       xpEarned: number;
@@ -656,7 +658,7 @@ const serverAPI = {
       };
     }>(API_ENDPOINTS.WORKOUT_HISTORY.COMPLETE_WORKOUT, {
       workoutId,
-      ...(memberId && { memberId }),
+      // Não enviar memberId no body - será extraído do token JWT
     });
   },
 
