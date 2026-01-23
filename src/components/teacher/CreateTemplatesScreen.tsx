@@ -11,6 +11,8 @@ import {
   Weight,
   Repeat,
   Activity,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import type { WorkoutTemplate } from "../../types";
 import { api } from "../../api";
@@ -26,6 +28,7 @@ export default function CreateTemplatesScreen({ setActiveTab }: Props) {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<WorkoutTemplate | null>(null);
+  const [expandedTemplates, setExpandedTemplates] = useState<Set<string>>(new Set());
 
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
@@ -61,10 +64,28 @@ export default function CreateTemplatesScreen({ setActiveTab }: Props) {
     try {
       await api.deleteWorkoutTemplate(templateId);
       setTemplates(templates.filter((t) => t.id !== templateId));
+      // Remover do conjunto de expandidos se estiver lá
+      setExpandedTemplates((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(templateId);
+        return newSet;
+      });
     } catch (error) {
       console.error("Erro ao deletar template:", error);
       alert("Erro ao deletar template. Tente novamente.");
     }
+  }
+
+  function toggleTemplateExpanded(templateId: string) {
+    setExpandedTemplates((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(templateId)) {
+        newSet.delete(templateId);
+      } else {
+        newSet.add(templateId);
+      }
+      return newSet;
+    });
   }
 
   return (
@@ -162,6 +183,17 @@ export default function CreateTemplatesScreen({ setActiveTab }: Props) {
                   </div>
                   <div className="flex gap-2">
                     <button
+                      onClick={() => toggleTemplateExpanded(template.id)}
+                      className="p-2 rounded-lg text-lime-400 hover:bg-lime-400/10 transition"
+                      title={expandedTemplates.has(template.id) ? "Recolher exercícios" : "Expandir exercícios"}
+                    >
+                      {expandedTemplates.has(template.id) ? (
+                        <ChevronUp size={18} />
+                      ) : (
+                        <ChevronDown size={18} />
+                      )}
+                    </button>
+                    <button
                       onClick={() => {
                         setEditingTemplate(template);
                         setShowCreateModal(true);
@@ -182,8 +214,9 @@ export default function CreateTemplatesScreen({ setActiveTab }: Props) {
                 </div>
 
                 {/* Lista de Exercícios do Template */}
-                <div className="space-y-2 mt-4 pt-4 border-t border-lime-400/20">
-                  {template.items.map((item, idx) => (
+                {expandedTemplates.has(template.id) && (
+                  <div className="space-y-2 mt-4 pt-4 border-t border-lime-400/20">
+                    {template.items.map((item, idx) => (
                     <div
                       key={item.id}
                       className={`${colors.input} rounded-lg p-3 border ${colors.border}`}
@@ -233,7 +266,8 @@ export default function CreateTemplatesScreen({ setActiveTab }: Props) {
                       </div>
                     </div>
                   ))}
-                </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

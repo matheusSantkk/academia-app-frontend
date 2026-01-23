@@ -26,6 +26,10 @@ interface WorkoutsListScreenProps {
 
 const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDataUpdate }) => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [workoutHistory, setWorkoutHistory] = useState<Array<{
+    id: string;
+    endTime: string;
+  }>>([]);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [earnedXP, setEarnedXP] = useState(0);
@@ -42,6 +46,12 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
       setWorkouts([]);
     });
     
+    // Buscar histórico de treinos
+    api.getWorkoutHistory(user.id).then(setWorkoutHistory).catch((error) => {
+      console.error("[WorkoutsListScreen] Erro ao buscar histórico:", error);
+      setWorkoutHistory([]);
+    });
+    
     // Buscar conquistas iniciais para comparação
     api.getAchievements(user.id).then((achievements) => {
       const unlockedIds = new Set(
@@ -50,6 +60,16 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
       setPreviousAchievements(unlockedIds);
     }).catch(() => {});
   }, [user.id]);
+
+  // Recarregar histórico quando os pontos mudarem (indicando que um treino foi completado)
+  useEffect(() => {
+    api
+      .getWorkoutHistory(user.id)
+      .then(setWorkoutHistory)
+      .catch((error) => {
+        console.error("[WorkoutsListScreen] Erro ao atualizar histórico:", error);
+      });
+  }, [userData.points, user.id]);
 
   const updateWeight = (
     workoutId: string,
@@ -178,6 +198,10 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
           // Recarregar treinos para atualizar status
           const updatedWorkouts = await api.getWorkouts(user.id);
           setWorkouts(updatedWorkouts);
+          
+          // Recarregar histórico de treinos para atualizar contador
+          const updatedHistory = await api.getWorkoutHistory(user.id);
+          setWorkoutHistory(updatedHistory);
         } catch (error) {
           console.error("[WorkoutsListScreen] Erro ao atualizar dados:", error);
         }
@@ -550,9 +574,17 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
     (acc, w) => acc + w.exercises.length,
     0
   );
-  const completedWorkouts = workouts.filter((w) =>
-    w.exercises.every((e) => e.completed)
-  ).length;
+  
+  // Calcular treinos completos do mês atual (igual à tela inicial)
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  const completedWorkoutsCount = workoutHistory.filter((h) => {
+    const workoutDate = new Date(h.endTime);
+    return workoutDate.getMonth() === currentMonth && 
+           workoutDate.getFullYear() === currentYear;
+  }).length;
 
   return (
     <div className={`min-h-screen ${colors.background} ${colors.text} pb-24`}>
@@ -587,7 +619,7 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
           <div className={`${colors.input} rounded-xl p-3 text-center`}>
             <Check className={`w-5 h-5 ${colors.textSecondary} mx-auto mb-1`} />
             <div className="text-blue-400 font-bold text-xl">
-              {completedWorkouts}
+              {completedWorkoutsCount}
             </div>
             <div className={`text-xs ${colors.textSecondary}`}>Completos</div>
           </div>
