@@ -91,6 +91,7 @@ export const API_ENDPOINTS = {
     LIST: "/workout-templates",
     GET: (id: string) => `/workout-templates/${id}`,
     CREATE: "/workout-templates",
+    UPDATE: (id: string) => `/workout-templates/${id}`,
     DELETE: (id: string) => `/workout-templates/${id}`,
     APPLY: "/workout-templates/apply",
   },

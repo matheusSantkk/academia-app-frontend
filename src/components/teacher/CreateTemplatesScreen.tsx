@@ -250,10 +250,11 @@ export default function CreateTemplatesScreen({ setActiveTab }: Props) {
             onSave={async (templateData) => {
               try {
                 if (editingTemplate) {
-                  // TODO: Implementar edição quando o backend suportar
-                  alert("Edição de templates será implementada em breve. Por enquanto, delete e crie um novo.");
+                  await api.updateWorkoutTemplate(editingTemplate.id, templateData);
+                  await loadTemplates();
                   setShowCreateModal(false);
                   setEditingTemplate(null);
+                  alert("Template atualizado com sucesso!");
                 } else {
                   await api.createWorkoutTemplate(templateData);
                   await loadTemplates();
@@ -501,6 +502,20 @@ function CreateTemplateModal({
                         className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2 text-sm text-center border ${colors.border} focus:border-lime-400 focus:outline-none`}
                       />
                     </div>
+                  </div>
+                  <div className="mt-3">
+                    <label className={`text-xs ${colors.textSecondary} mb-1.5 block`}>
+                      Observações (opcional)
+                    </label>
+                    <textarea
+                      value={item.observations || ""}
+                      onChange={(e) =>
+                        updateItem(index, { observations: e.target.value })
+                      }
+                      placeholder="Observações sobre este exercício..."
+                      rows={2}
+                      className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2 text-sm border ${colors.border} focus:border-lime-400 focus:outline-none resize-none`}
+                    />
                   </div>
                 </div>
               ))}

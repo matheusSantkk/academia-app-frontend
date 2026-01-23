@@ -230,6 +230,48 @@ const templatesStore = (() => {
       save();
       return tpl;
     },
+    update: (id: string, payload: {
+      title: string;
+      description?: string;
+      items: Array<{
+        exerciseName: string;
+        sets: number;
+        reps: string;
+        weight?: number;
+        rest?: string;
+        observations?: string;
+      }>;
+    }): StoredWorkoutTemplate | null => {
+      const idx = templates.findIndex((t) => t.id === id);
+      if (idx === -1) return null;
+      
+      const now = new Date().toISOString();
+      const updated: StoredWorkoutTemplate = {
+        ...templates[idx],
+        title: payload.title,
+        description: payload.description ?? null,
+        items: payload.items.map((it, itemIdx) => ({
+          id: `${id}-i${itemIdx}-${Date.now()}`,
+          exercise: { id: `ex-${Date.now()}-${itemIdx}`, name: it.exerciseName },
+          sets: it.sets,
+          repetitions: (() => {
+            const m = String(it.reps || "").match(/(\d+)/);
+            return m ? Number(m[1]) : 10;
+          })(),
+          weight: it.weight && it.weight > 0 ? it.weight : null,
+          restTime: (() => {
+            const m = String(it.rest || "60").replace(/[^0-9]/g, "");
+            const n = Number(m);
+            return Number.isFinite(n) && n > 0 ? n : 60;
+          })(),
+          observations: it.observations ?? null,
+        })),
+        updatedAt: now,
+      };
+      templates[idx] = updated;
+      save();
+      return updated;
+    },
     delete: (id: string) => {
       templates = templates.filter((t) => t.id !== id);
       save();
@@ -478,6 +520,33 @@ const mockAPI = {
     const current = trainingsStore.get(memberId);
     const updated = trainingsStore.set(memberId, [...current, workout]);
     return new Promise((resolve) => setTimeout(() => resolve(updated), 250));
+  },
+
+  updateWorkoutTemplate: async (
+    id: string,
+    template: {
+      title: string;
+      description?: string;
+      items: Array<{
+        exerciseName: string;
+        sets: number;
+        reps: string;
+        weight?: number;
+        rest?: string;
+        observations?: string;
+      }>;
+    },
+  ): Promise<import("../types").WorkoutTemplate> => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const updated = templatesStore.update(id, template);
+        if (!updated) {
+          reject(new Error("Template não encontrado"));
+          return;
+        }
+        resolve(updated as any);
+      }, 300);
+    });
   },
 
   deleteWorkoutTemplate: async (id: string): Promise<void> => {
@@ -873,6 +942,27 @@ const serverAPI = {
     return httpClient.post<Workout[]>(
       API_ENDPOINTS.WORKOUT_TEMPLATES.APPLY,
       { templateId, memberId },
+    );
+  },
+
+  updateWorkoutTemplate: async (
+    id: string,
+    template: {
+      title: string;
+      description?: string;
+      items: Array<{
+        exerciseName: string;
+        sets: number;
+        reps: string;
+        weight?: number;
+        rest?: string;
+        observations?: string;
+      }>;
+    },
+  ): Promise<import("../types").WorkoutTemplate> => {
+    return httpClient.patch<import("../types").WorkoutTemplate>(
+      API_ENDPOINTS.WORKOUT_TEMPLATES.UPDATE(id),
+      template,
     );
   },
 
