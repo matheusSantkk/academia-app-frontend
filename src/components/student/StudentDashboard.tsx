@@ -102,8 +102,26 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
     return () => clearTimeout(timer);
   }, [user, onUserDataUpdate]);
 
-  // Calcular treinos completos baseado no histórico
-  const completedWorkoutsCount = workoutHistory.length;
+  // Recarregar histórico quando os pontos mudarem (indicando que um treino foi completado)
+  useEffect(() => {
+    api
+      .getWorkoutHistory(user.id)
+      .then(setWorkoutHistory)
+      .catch((error) => {
+        console.error("[StudentDashboard] Erro ao atualizar histórico:", error);
+      });
+  }, [userData.points, user.id]);
+
+  // Calcular treinos completos do mês atual
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  const completedWorkoutsCount = workoutHistory.filter((h) => {
+    const workoutDate = new Date(h.endTime);
+    return workoutDate.getMonth() === currentMonth && 
+           workoutDate.getFullYear() === currentYear;
+  }).length;
   
   // Calcular frequência semanal baseada no histórico real
   const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
@@ -372,10 +390,10 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
               </div>
               <div>
                 <p className={`${colors.text} font-medium`}>
-                  Praça Pedro Coutteiro, nº 55
+                  Praça Pedro Coutinho, 155 - Centro
                 </p>
                 <p className={`${colors.textSecondary} text-sm`}>
-                  Paulista - Recife/PE
+                  Paudalho/PE
                 </p>
               </div>
             </div>

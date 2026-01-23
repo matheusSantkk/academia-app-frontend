@@ -46,6 +46,7 @@ export const calculateBonusXP = (
 const LOCAL_STUDENTS_KEY = "app_students_v1";
 const LOCAL_TRAININGS_KEY = "app_trainings_v1";
 const LOCAL_TEMPLATES_KEY = "app_workout_templates_v1";
+const LOCAL_WORKOUT_HISTORY_KEY = "app_workout_history_v1";
 
 type TrainingsMap = Record<string, Workout[]>;
 
@@ -138,6 +139,68 @@ const trainingsStore = (() => {
       map[studentId] = workouts;
       save();
       return map[studentId];
+    },
+  } as const;
+})();
+
+type WorkoutHistoryItem = {
+  id: string;
+  workoutId: string;
+  memberId: string;
+  startTime: string;
+  endTime: string;
+  xpEarned: number;
+  createdAt: string;
+};
+
+const workoutHistoryStore = (() => {
+  let history: WorkoutHistoryItem[] = [];
+
+  const load = (): WorkoutHistoryItem[] => {
+    try {
+      const raw = localStorage.getItem(LOCAL_WORKOUT_HISTORY_KEY);
+      if (raw) {
+        history = JSON.parse(raw) as WorkoutHistoryItem[];
+        return history;
+      }
+    } catch {
+      // ignore
+    }
+    history = [];
+    save();
+    return history;
+  };
+
+  const save = () => {
+    try {
+      localStorage.setItem(LOCAL_WORKOUT_HISTORY_KEY, JSON.stringify(history));
+    } catch {
+      // ignore
+    }
+  };
+
+  load();
+
+  return {
+    getByMember: (memberId: string): WorkoutHistoryItem[] => {
+      return history.filter((h) => h.memberId === memberId);
+    },
+    add: (item: WorkoutHistoryItem): WorkoutHistoryItem => {
+      history.push(item);
+      save();
+      return item;
+    },
+    hasCompletedToday: (memberId: string): boolean => {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      return history.some((h) => {
+        if (h.memberId !== memberId) return false;
+        const endTime = new Date(h.endTime);
+        return endTime >= today && endTime < tomorrow;
+      });
     },
   } as const;
 })();
@@ -434,10 +497,53 @@ const mockAPI = {
     // No mock, simula completar treino e ganhar XP
     return new Promise((resolve) => {
       setTimeout(() => {
-        const xpEarned = Math.floor(Math.random() * 50) + 10; // 10-60 XP
-        const newXP = (mockStudentUser.points || 0) + xpEarned;
-        const newLevel = Math.floor(newXP / 100) + 1;
-        const newStreak = (mockStudentUser.streak || 0) + 1;
+        const memberId = mockStudentUser.id;
+        
+        // Verificar se já completou um treino hoje
+        const alreadyCompletedToday = workoutHistoryStore.hasCompletedToday(memberId);
+        
+        let xpEarned = 0;
+        let newXP = mockStudentUser.points || 0;
+        let newLevel = Math.floor(newXP / 100) + 1;
+        let newStreak = mockStudentUser.streak || 0;
+
+        if (!alreadyCompletedToday) {
+          // Primeiro treino do dia, ganha XP
+          xpEarned = Math.floor(Math.random() * 50) + 10; // 10-60 XP
+          newXP = newXP + xpEarned;
+          newLevel = Math.floor(newXP / 100) + 1;
+          newStreak = (mockStudentUser.streak || 0) + 1;
+          
+          // Atualizar mockStudentUser
+          mockStudentUser.points = newXP;
+          mockStudentUser.level = newLevel;
+          mockStudentUser.streak = newStreak;
+          
+          // Salvar no histórico
+          const now = new Date().toISOString();
+          workoutHistoryStore.add({
+            id: `h${Date.now()}`,
+            workoutId: _workoutId,
+            memberId: memberId,
+            startTime: now,
+            endTime: now,
+            xpEarned: xpEarned,
+            createdAt: now,
+          });
+        } else {
+          // Já completou um treino hoje, não ganha XP
+          // Mas ainda atualiza o histórico (sem XP)
+          const now = new Date().toISOString();
+          workoutHistoryStore.add({
+            id: `h${Date.now()}`,
+            workoutId: _workoutId,
+            memberId: memberId,
+            startTime: now,
+            endTime: now,
+            xpEarned: 0,
+            createdAt: now,
+          });
+        }
 
         resolve({
           id: _workoutId,
@@ -453,7 +559,7 @@ const mockAPI = {
     });
   },
 
-  getWorkoutHistory: async (_memberId: string): Promise<Array<{
+  getWorkoutHistory: async (memberId: string): Promise<Array<{
     id: string;
     workoutId: string;
     memberId: string;
@@ -462,10 +568,8 @@ const mockAPI = {
     xpEarned: number;
     createdAt: string;
   }>> => {
-    void _memberId;
-    // No mock, retorna histórico vazio
     return new Promise((resolve) =>
-      setTimeout(() => resolve([]), 300),
+      setTimeout(() => resolve(workoutHistoryStore.getByMember(memberId)), 300),
     );
   },
 

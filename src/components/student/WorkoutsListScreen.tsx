@@ -233,15 +233,31 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
                 <div className="bg-gradient-to-br from-lime-400/20 via-lime-500/20 to-yellow-400/20 rounded-2xl p-6 border-2 border-lime-400/40 shadow-lg mb-4 relative overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-r from-lime-400/5 to-transparent animate-pulse" />
                   <div className="relative z-10">
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <TrendingUp className="w-6 h-6 text-lime-400 animate-bounce" />
-                      <p className="text-lime-400 font-black text-5xl animate-pulse">
-                        +{earnedXP || 10} XP
-                      </p>
-                    </div>
-                    <p className={`text-sm ${colors.textSecondary} font-medium`}>
-                      Experiência ganha
-                    </p>
+                    {earnedXP > 0 ? (
+                      <>
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <TrendingUp className="w-6 h-6 text-lime-400 animate-bounce" />
+                          <p className="text-lime-400 font-black text-5xl animate-pulse">
+                            +{earnedXP} XP
+                          </p>
+                        </div>
+                        <p className={`text-sm ${colors.textSecondary} font-medium`}>
+                          Experiência ganha
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <Clock className="w-6 h-6 text-orange-400" />
+                          <p className="text-orange-400 font-black text-3xl">
+                            Treino Registrado
+                          </p>
+                        </div>
+                        <p className={`text-sm ${colors.textSecondary} font-medium`}>
+                          Você já ganhou XP hoje! Volte amanhã para ganhar mais.
+                        </p>
+                      </>
+                    )}
                     {userData.level && (
                       <div className="mt-3 pt-3 border-t border-lime-400/20">
                         <div className="flex items-center justify-between text-xs">
@@ -400,12 +416,21 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
 
           {allCompleted && (
             <div className="bg-gradient-to-r from-lime-400/10 to-lime-500/10 border-2 border-lime-400 rounded-xl p-4 text-center shadow-lg">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Trophy className="w-6 h-6 text-lime-400" />
-                <p className="text-lime-400 font-bold text-xl">
-                  +{earnedXP || 10} XP Ganhos!
-                </p>
-              </div>
+              {earnedXP > 0 ? (
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Trophy className="w-6 h-6 text-lime-400" />
+                  <p className="text-lime-400 font-bold text-xl">
+                    +{earnedXP} XP Ganhos!
+                  </p>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Clock className="w-5 h-5 text-orange-400" />
+                  <p className="text-orange-400 font-bold text-lg">
+                    Treino registrado! Você já ganhou XP hoje.
+                  </p>
+                </div>
+              )}
               <div className="flex items-center justify-center gap-4 text-sm">
                 <div className="flex items-center gap-1">
                   <Flame className="w-4 h-4 text-orange-400" />

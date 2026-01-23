@@ -193,7 +193,7 @@ const LoginScreen: React.FC<{
             <Dumbbell className="w-10 h-10 text-slate-900" />
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">FormaMais</h1>
-          <p className="text-slate-400">Seu treino, seu progresso</p>
+          <p className="text-slate-400">Praça Pedro Coutinho, 155 - Centro - Paudalho/PE</p>
 
           {/* Indicador de Status do Servidor */}
           {isServerMode && serverStatus !== null && (
