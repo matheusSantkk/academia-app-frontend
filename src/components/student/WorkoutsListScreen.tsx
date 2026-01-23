@@ -24,22 +24,13 @@ interface WorkoutsListScreenProps {
   onUserDataUpdate?: () => void;
 }
 
-function calculateBonusXP(
-  baseXP: number,
-  streak: number,
-  prsCount: number
-): number {
-  const streakBonus = Math.min(streak * 10, 100);
-  const prBonus = prsCount * 10;
-  const totalBonus = streakBonus + prBonus;
-  return Math.round(baseXP * (1 + totalBonus / 100));
-}
-
 const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDataUpdate }) => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState<Workout | null>(null);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
   const [earnedXP, setEarnedXP] = useState(0);
+  const [newAchievements, setNewAchievements] = useState<string[]>([]);
+  const [previousAchievements, setPreviousAchievements] = useState<Set<string>>(new Set());
   const [userData, setUserData] = useState<UserData>(user);
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
@@ -50,6 +41,14 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
       console.error("[WorkoutsListScreen] Erro ao buscar treinos:", error);
       setWorkouts([]);
     });
+    
+    // Buscar conquistas iniciais para comparação
+    api.getAchievements(user.id).then((achievements) => {
+      const unlockedIds = new Set(
+        achievements.filter(a => a.unlocked).map(a => a.id)
+      );
+      setPreviousAchievements(unlockedIds);
+    }).catch(() => {});
   }, [user.id]);
 
   const updateWeight = (
@@ -102,34 +101,84 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
     );
 
     try {
+      console.log('[WorkoutsListScreen] Iniciando completar treino:', { workoutId, userId: user.id });
+      
       // Chamar o backend para completar o treino e ganhar XP
       const result = await api.completeWorkout(workoutId, user.id);
       
-      // Atualizar XP e level do usuário
-      if (result.member) {
-        setUserData({
-          ...userData,
-          points: result.member.xp,
-          level: result.member.level,
+      console.log('[WorkoutsListScreen] Resposta do backend:', result);
+      
+      // Atualizar XP e level do usuário imediatamente
+      if (result && result.member) {
+        const newXP = Number(result.member.xp) || 0;
+        const newLevel = Number(result.member.level) || 1;
+        const xpGained = Number(result.xpEarned) || 10;
+        
+        console.log('[WorkoutsListScreen] Atualizando dados:', { 
+          newXP, 
+          newLevel, 
+          xpGained,
+          oldXP: userData.points,
+          oldLevel: userData.level
         });
-        setEarnedXP(result.xpEarned);
+        
+        setUserData(prev => ({
+          ...prev,
+          points: newXP,
+          level: newLevel,
+        }));
+        setEarnedXP(xpGained);
+      } else {
+        console.warn('[WorkoutsListScreen] Resposta não contém member, usando fallback');
+        // Fallback se não vier member no resultado
+        setEarnedXP(10);
       }
       
       setShowCompletionModal(true);
-      setTimeout(() => {
-        setShowCompletionModal(false);
-        // Recarregar dados do usuário para atualizar XP
-        api.getMemberData(user.id).then((memberData) => {
+      
+      // Recarregar dados do usuário para atualizar XP, streak e conquistas
+      setTimeout(async () => {
+        try {
+          const memberData = await api.getMemberData(user.id);
           setUserData({
             ...userData,
             points: memberData.xp,
             level: memberData.level,
+            streak: memberData.currentStreak,
           });
+          
+          // Verificar se novas conquistas foram desbloqueadas
+          const achievements = await api.getAchievements(user.id);
+          const currentUnlockedIds = new Set(
+            achievements.filter(a => a.unlocked).map(a => a.id)
+          );
+          
+          // Encontrar conquistas que foram desbloqueadas agora
+          const newlyUnlocked = achievements
+            .filter(a => a.unlocked && !previousAchievements.has(a.id))
+            .map(a => a.name);
+          
+          if (newlyUnlocked.length > 0) {
+            setNewAchievements(newlyUnlocked);
+          }
+          
+          // Atualizar conjunto de conquistas anteriores
+          setPreviousAchievements(currentUnlockedIds);
+          
           // Notificar o App.tsx para atualizar o user global
           if (onUserDataUpdate) {
             onUserDataUpdate();
           }
-        }).catch(console.error);
+          
+          // Recarregar treinos para atualizar status
+          const updatedWorkouts = await api.getWorkouts(user.id);
+          setWorkouts(updatedWorkouts);
+        } catch (error) {
+          console.error("[WorkoutsListScreen] Erro ao atualizar dados:", error);
+        }
+        
+        setShowCompletionModal(false);
+        setNewAchievements([]);
       }, 3000);
     } catch (error) {
       console.error("[WorkoutsListScreen] Erro ao completar treino:", error);
@@ -149,44 +198,105 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
     ).length;
     const allCompleted = completedCount === workout.exercises.length;
     const progress = (completedCount / workout.exercises.length) * 100;
-    const baseXP = 10;
-    const calculatedXP = calculateBonusXP(baseXP, userData.streak || 0, prCount);
-    const displayedXP = earnedXP > 0 ? earnedXP : (allCompleted ? baseXP : calculatedXP);
 
     return (
       <div className={`min-h-screen ${colors.background} ${colors.text} pb-24`}>
         {/* Completion Modal */}
         {showCompletionModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4 animate-fade-in">
             <div
-              className={`${colors.card} rounded-2xl p-8 max-w-sm w-full shadow-2xl border ${colors.border} animate-scale-in`}
+              className={`${colors.card} rounded-3xl p-8 max-w-md w-full shadow-2xl border-2 border-lime-400/30 animate-scale-in relative overflow-hidden`}
             >
-              <div className="text-center">
-                <div className="w-20 h-20 bg-gradient-to-br from-lime-400 to-lime-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
-                  <Trophy className="w-10 h-10 text-slate-900" />
+              {/* Background decoration */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-lime-400/10 rounded-full -mr-16 -mt-16 blur-2xl" />
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-yellow-400/10 rounded-full -ml-12 -mb-12 blur-xl" />
+              
+              <div className="text-center relative z-10">
+                {/* Animated trophy icon */}
+                <div className="w-24 h-24 bg-gradient-to-br from-lime-400 via-lime-500 to-yellow-400 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl animate-bounce">
+                  <Trophy className="w-12 h-12 text-slate-900" />
                 </div>
-                <h3 className={`${colors.text} text-2xl font-bold mb-2`}>
+                
+                <h3 className={`${colors.text} text-3xl font-black mb-2 bg-gradient-to-r from-lime-400 to-yellow-400 bg-clip-text text-transparent`}>
                   🎉 Parabéns!
                 </h3>
-                <p className={`${colors.textSecondary} mb-4`}>
+                <p className={`${colors.textSecondary} mb-6 text-lg`}>
                   Treino concluído com sucesso!
                 </p>
-                <div className="bg-gradient-to-r from-lime-400/20 to-lime-500/20 rounded-xl p-4 border border-lime-400/30">
-                  <p className="text-lime-400 font-bold text-3xl">
-                    +{displayedXP} XP
-                  </p>
-                  <p className={`text-sm ${colors.textSecondary} mt-1`}>
-                    Experiência ganha
-                  </p>
+                
+                {/* XP Card - Enhanced */}
+                <div className="bg-gradient-to-br from-lime-400/20 via-lime-500/20 to-yellow-400/20 rounded-2xl p-6 border-2 border-lime-400/40 shadow-lg mb-4 relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-lime-400/5 to-transparent animate-pulse" />
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <TrendingUp className="w-6 h-6 text-lime-400 animate-bounce" />
+                      <p className="text-lime-400 font-black text-5xl animate-pulse">
+                        +{earnedXP || 10} XP
+                      </p>
+                    </div>
+                    <p className={`text-sm ${colors.textSecondary} font-medium`}>
+                      Experiência ganha
+                    </p>
+                    {userData.level && (
+                      <div className="mt-3 pt-3 border-t border-lime-400/20">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className={colors.textSecondary}>Nível {userData.level}</span>
+                          <span className="text-lime-400 font-bold">
+                            {userData.points || 0} / {(userData.level || 1) * 50} XP
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-700/30 rounded-full h-2 mt-2 overflow-hidden">
+                          <div
+                            className="bg-gradient-to-r from-lime-400 to-lime-500 h-2 rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.min(((userData.points || 0) % ((userData.level || 1) * 50)) / ((userData.level || 1) * 50) * 100, 100)}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
+                
+                {/* PRs */}
                 {prCount > 0 && (
-                  <div className="mt-4 flex items-center justify-center gap-2 text-yellow-400">
-                    <Trophy className="w-5 h-5" />
-                    <span className="font-semibold">
-                      {prCount} Novo{prCount > 1 ? "s" : ""} PR!
+                  <div className="mt-4 bg-gradient-to-r from-yellow-400/20 to-orange-500/20 rounded-xl p-4 border border-yellow-400/40 flex items-center justify-center gap-2">
+                    <Trophy className="w-5 h-5 text-yellow-400" />
+                    <span className="text-yellow-400 font-bold">
+                      {prCount} Novo{prCount > 1 ? "s" : ""} PR{prCount > 1 ? "s" : ""}!
                     </span>
                   </div>
                 )}
+                
+                {/* Achievements */}
+                {newAchievements.length > 0 && (
+                  <div className="mt-4 bg-gradient-to-br from-yellow-400/20 via-orange-500/20 to-pink-500/20 rounded-2xl p-5 border-2 border-yellow-400/40 shadow-lg">
+                    <div className="flex items-center justify-center gap-2 mb-3">
+                      <Trophy className="w-6 h-6 text-yellow-400" />
+                      <span className="text-yellow-400 font-black text-xl">
+                        {newAchievements.length} Conquista{newAchievements.length > 1 ? "s" : ""} Desbloqueada{newAchievements.length > 1 ? "s" : ""}!
+                      </span>
+                    </div>
+                    <div className="space-y-2">
+                      {newAchievements.slice(0, 3).map((achievement, idx) => (
+                        <div key={idx} className="flex items-center gap-2 text-sm text-yellow-300 font-semibold bg-yellow-400/10 rounded-lg px-3 py-2">
+                          <span className="text-lg">🏆</span>
+                          <span>{achievement}</span>
+                        </div>
+                      ))}
+                      {newAchievements.length > 3 && (
+                        <div className="text-xs text-yellow-400/80 font-medium text-center pt-1">
+                          +{newAchievements.length - 3} mais conquista{newAchievements.length - 3 > 1 ? "s" : ""}...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
+                {/* Close button hint */}
+                <p className={`${colors.textSecondary} text-xs mt-6 opacity-70`}>
+                  Fechando automaticamente...
+                </p>
               </div>
             </div>
           </div>

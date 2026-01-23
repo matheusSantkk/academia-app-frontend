@@ -70,7 +70,7 @@ export const API_ENDPOINTS = {
   // Achievements
   ACHIEVEMENTS: {
     LIST: "/achievements",
-    USER_ACHIEVEMENTS: "/achievements/user",
+    BY_MEMBER: (memberId: string) => `/achievements/member/${memberId}`,
   },
 
   // Workout History

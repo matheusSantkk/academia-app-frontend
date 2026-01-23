@@ -314,6 +314,22 @@ const mockAPI = {
       }, 500);
     });
   },
+
+  getWorkoutHistory: async (_memberId: string): Promise<Array<{
+    id: string;
+    workoutId: string;
+    memberId: string;
+    startTime: string;
+    endTime: string;
+    xpEarned: number;
+    createdAt: string;
+  }>> => {
+    void _memberId;
+    // No mock, retorna histórico vazio
+    return new Promise((resolve) =>
+      setTimeout(() => resolve([]), 300),
+    );
+  },
 };
 
 // --- Server API Implementation ---
@@ -410,13 +426,56 @@ const serverAPI = {
   },
 
   getAchievements: async (memberId?: string): Promise<Achievement[]> => {
-    if (memberId) {
-      // Buscar achievements específicos do aluno
-      return httpClient.get<Achievement[]>(
-        API_ENDPOINTS.ACHIEVEMENTS.USER_ACHIEVEMENTS,
-      );
+    // Buscar todas as conquistas disponíveis
+    const allAchievements = await httpClient.get<Array<{
+      id: string;
+      title: string;
+      description: string;
+      points: number;
+      iconUrl?: string;
+    }>>(API_ENDPOINTS.ACHIEVEMENTS.LIST);
+
+    // Se não tiver memberId, retornar todas como bloqueadas
+    if (!memberId) {
+      return allAchievements.map((a) => ({
+        id: a.id,
+        name: a.title,
+        description: a.description,
+        icon: a.iconUrl || "🏆",
+        unlocked: false,
+      }));
     }
-    return httpClient.get<Achievement[]>(API_ENDPOINTS.ACHIEVEMENTS.LIST);
+
+    // Buscar conquistas desbloqueadas do aluno
+    const unlockedAchievements = await httpClient.get<Array<{
+      id: string;
+      title: string;
+      description: string;
+      points: number;
+      iconUrl?: string;
+      unlockedAt?: string;
+    }>>(API_ENDPOINTS.ACHIEVEMENTS.BY_MEMBER(memberId));
+
+    const unlockedIds = new Set(unlockedAchievements.map((a) => a.id));
+    const unlockedMap = new Map(
+      unlockedAchievements.map((a) => [a.id, a])
+    );
+
+    // Combinar: todas as conquistas, marcando quais estão desbloqueadas
+    return allAchievements.map((a) => {
+      const isUnlocked = unlockedIds.has(a.id);
+      const unlockedAchievement = unlockedMap.get(a.id);
+      
+      return {
+        id: a.id,
+        name: a.title,
+        description: a.description,
+        icon: a.iconUrl || "🏆",
+        unlocked: isUnlocked,
+        unlockedAt: unlockedAchievement?.unlockedAt || (isUnlocked ? new Date().toISOString() : undefined),
+        points: a.points,
+      };
+    });
   },
 
   getMemberData: async (
@@ -594,6 +653,26 @@ const serverAPI = {
       workoutId,
       ...(memberId && { memberId }),
     });
+  },
+
+  getWorkoutHistory: async (memberId: string): Promise<Array<{
+    id: string;
+    workoutId: string;
+    memberId: string;
+    startTime: string;
+    endTime: string;
+    xpEarned: number;
+    createdAt: string;
+  }>> => {
+    return httpClient.get<Array<{
+      id: string;
+      workoutId: string;
+      memberId: string;
+      startTime: string;
+      endTime: string;
+      xpEarned: number;
+      createdAt: string;
+    }>>(API_ENDPOINTS.WORKOUT_HISTORY.BY_MEMBER(memberId));
   },
 };
 

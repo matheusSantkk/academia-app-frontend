@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import type { UserData, Workout } from "../../types";
 import { api } from "../../api";
-import { mockAchievements } from "../../data/MockData";
 import { useTheme } from "../../theme/context";
 import { getThemeColors } from "../../theme/colors";
 
@@ -38,6 +37,11 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
   onUserDataUpdate,
 }) => {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
+  const [workoutHistory, setWorkoutHistory] = useState<Array<{
+    id: string;
+    endTime: string;
+  }>>([]);
+  const [achievements, setAchievements] = useState<Array<{ unlocked: boolean }>>([]);
   const [showWelcome, setShowWelcome] = useState(true);
   const [userData, setUserData] = useState<UserData>(user);
   const { theme } = useTheme();
@@ -76,27 +80,52 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
         setWorkouts([]);
       });
 
+    // Buscar histórico de treinos
+    api
+      .getWorkoutHistory(user.id)
+      .then(setWorkoutHistory)
+      .catch((error) => {
+        console.error("[StudentDashboard] Erro ao buscar histórico:", error);
+        setWorkoutHistory([]);
+      });
+
+    // Buscar conquistas
+    api
+      .getAchievements(user.id)
+      .then(setAchievements)
+      .catch((error) => {
+        console.error("[StudentDashboard] Erro ao buscar conquistas:", error);
+        setAchievements([]);
+      });
+
     const timer = setTimeout(() => setShowWelcome(false), 5000);
     return () => clearTimeout(timer);
   }, [user, onUserDataUpdate]);
 
-  const completedWorkouts = workouts.filter((w) =>
-    w.exercises.every((e) => e.completed),
-  ).length;
+  // Calcular treinos completos baseado no histórico
+  const completedWorkoutsCount = workoutHistory.length;
+  
+  // Calcular frequência semanal baseada no histórico real
+  const weekDays = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+  const today = new Date();
+  const todayDay = today.getDay();
+  
+  // Calcular quais dias da semana atual tiveram treinos
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() - todayDay);
+  startOfWeek.setHours(0, 0, 0, 0);
+  
+  const activeDays = workoutHistory
+    .map((h) => {
+      const workoutDate = new Date(h.endTime);
+      if (workoutDate >= startOfWeek) {
+        return workoutDate.getDay();
+      }
+      return null;
+    })
+    .filter((day): day is number => day !== null);
 
-  const totalExercises = workouts.reduce(
-    (acc, w) => acc + w.exercises.length,
-    0,
-  );
-  const completedExercises = workouts.reduce(
-    (acc, w) => acc + w.exercises.filter((e) => e.completed).length,
-    0,
-  );
-
-  const progressPercent =
-    totalExercises > 0
-      ? Math.round((completedExercises / totalExercises) * 100)
-      : 0;
+  const uniqueActiveDays = [...new Set(activeDays)];
 
   const levelProgress = calculateLevelProgress(
     userData.points || 0,
@@ -104,11 +133,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
   );
   const nextLevelPoints = (userData.level || 1) * 50;
 
-  const weekDays = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
-  const today = new Date().getDay();
-  const activeDays = [1, 3, 5];
-
-  const unlockedAchievements = mockAchievements.filter(
+  const unlockedAchievements = achievements.filter(
     (a) => a.unlocked,
   ).length;
 
@@ -177,15 +202,15 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
               Completos
             </div>
             <div className={`text-5xl font-black ${colors.text} mb-1`}>
-              {completedWorkouts}
+              {completedWorkoutsCount}
             </div>
             <div className={`${colors.textSecondary} text-xs`}>
-              de {workouts.length} treinos
+              treinos completos
             </div>
             <div className="flex items-center gap-1 mt-2">
               <TrendingUp className="w-3 h-3 text-lime-400" />
               <span className="text-lime-400 text-xs font-medium">
-                +{progressPercent}%
+                {workouts.length} disponíveis
               </span>
             </div>
           </div>
@@ -214,7 +239,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
               Esta semana
             </div>
             <div className={`text-4xl font-black ${colors.text}`}>
-              {activeDays.length}
+              {uniqueActiveDays.length}
             </div>
             <div className={`${colors.textSecondary} text-xs mt-1`}>
               dias ativos
@@ -235,8 +260,8 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
         >
           <div className="flex justify-between gap-2">
             {weekDays.map((day, idx) => {
-              const isToday = idx === today;
-              const isActive = activeDays.includes(idx);
+              const isToday = idx === todayDay;
+              const isActive = uniqueActiveDays.includes(idx);
 
               return (
                 <div
@@ -270,7 +295,7 @@ const StudentDashboard: React.FC<StudentDashboardProps> = ({
               Meta: 5 dias/semana
             </span>
             <span className="text-lime-400 font-bold text-sm">
-              {activeDays.length}/5
+              {uniqueActiveDays.length}/5
             </span>
           </div>
         </div>

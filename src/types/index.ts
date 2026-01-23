@@ -44,6 +44,7 @@ export interface Achievement {
   icon: string;
   unlocked: boolean;
   unlockedAt?: string;
+  points?: number;
 }
 
 export interface RankingUser {
@@ -52,6 +53,8 @@ export interface RankingUser {
   points: number;
   level: number;
   position: number;
+  isActive?: boolean;
+  lastLoginAt?: string | null;
 }
 
 export interface StudentMedicalInfo {

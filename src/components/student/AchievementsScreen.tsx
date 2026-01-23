@@ -33,28 +33,20 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
   }, [user.id]);
 
   const unlockedCount = achievements.filter((a) => a.unlocked).length;
-  const totalPoints = unlockedCount * 50;
+  const totalPoints = achievements
+    .filter((a) => a.unlocked)
+    .reduce((sum, a) => sum + (a.points || 50), 0);
 
-  const getRarityColor = (id: string) => {
-    // Lendárias (a13-a16)
-    if (["a13", "a14", "a15", "a16"].includes(id))
-      return "from-purple-500 to-pink-500";
-    // Raras (a9-a12)
-    if (["a9", "a10", "a11", "a12"].includes(id))
-      return "from-blue-500 to-cyan-500";
-    // Incomuns (a5-a8)
-    if (["a5", "a6", "a7", "a8"].includes(id))
-      return "from-green-500 to-lime-500";
-    // Comuns (a1-a4)
-    return "from-gray-500 to-gray-600";
+  // Função para determinar raridade baseada nos pontos
+  const getRarity = (points: number) => {
+    if (points >= 500) return { color: "from-purple-500 to-pink-500", label: "Lendário" };
+    if (points >= 200) return { color: "from-blue-500 to-cyan-500", label: "Raro" };
+    if (points >= 75) return { color: "from-green-500 to-lime-500", label: "Incomum" };
+    return { color: "from-gray-500 to-gray-600", label: "Comum" };
   };
 
-  const getRarityLabel = (id: string) => {
-    if (["a13", "a14", "a15", "a16"].includes(id)) return "Lendário";
-    if (["a9", "a10", "a11", "a12"].includes(id)) return "Raro";
-    if (["a5", "a6", "a7", "a8"].includes(id)) return "Incomum";
-    return "Comum";
-  };
+  const getRarityColor = (points: number) => getRarity(points).color;
+  const getRarityLabel = (points: number) => getRarity(points).label;
 
   return (
     <div className={`min-h-screen ${colors.background} ${colors.text} pb-24`}>
@@ -106,7 +98,7 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
           <div className="flex items-center justify-center gap-4 text-sm">
             <div className="flex items-center gap-1">
               <Star className="w-4 h-4 text-yellow-400" />
-              <span className={colors.textSecondary}>{totalPoints} pontos</span>
+              <span className={colors.textSecondary}>{totalPoints} XP ganhos</span>
             </div>
             <span className={colors.textSecondary}>•</span>
             <div className="flex items-center gap-1">
@@ -138,7 +130,7 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
                 className={`relative w-16 h-16 rounded-xl flex items-center justify-center text-4xl shrink-0 ${
                   achievement.unlocked
                     ? `bg-linear-to-br ${getRarityColor(
-                        achievement.id,
+                        achievement.points || 50,
                       )} shadow-lg`
                     : `${colors.input}`
                 }`}
@@ -159,10 +151,10 @@ const AchievementsScreen: FC<AchievementsScreenProps> = ({ user }) => {
                     {achievement.unlocked && (
                       <span
                         className={`text-xs font-semibold px-2 py-1 rounded-md bg-linear-to-r ${getRarityColor(
-                          achievement.id,
+                          achievement.points || 50,
                         )} text-white shadow-sm`}
                       >
-                        {getRarityLabel(achievement.id)}
+                        {getRarityLabel(achievement.points || 50)}
                       </span>
                     )}
                   </div>

@@ -103,6 +103,9 @@ const RankingScreen: React.FC = () => {
                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center text-lg shadow-md">
                         🥈
                       </div>
+                      {topThree[1].isActive && (
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-lime-400 rounded-full border-2 border-white shadow-sm" />
+                      )}
                     </div>
                     <span
                       className={`${colors.text} font-semibold text-sm text-center`}
@@ -128,6 +131,9 @@ const RankingScreen: React.FC = () => {
                       <div className="absolute -top-3 -right-3 w-10 h-10 bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-full flex items-center justify-center text-2xl shadow-lg">
                         👑
                       </div>
+                      {topThree[0].isActive && (
+                        <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-lime-400 rounded-full border-2 border-white shadow-sm" />
+                      )}
                     </div>
                     <span
                       className={`${colors.text} font-bold text-base text-center`}
@@ -153,6 +159,9 @@ const RankingScreen: React.FC = () => {
                       <div className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-orange-400 to-orange-500 rounded-full flex items-center justify-center text-lg shadow-md">
                         🥉
                       </div>
+                      {topThree[2].isActive && (
+                        <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-lime-400 rounded-full border-2 border-white shadow-sm" />
+                      )}
                     </div>
                     <span
                       className={`${colors.text} font-semibold text-sm text-center`}
@@ -207,10 +216,21 @@ const RankingScreen: React.FC = () => {
                         •
                       </span>
                       <div className="flex items-center gap-1">
-                        <TrendingUp size={12} className="text-lime-400" />
-                        <span className="text-lime-400 text-xs font-medium">
-                          Ativo
-                        </span>
+                        {user.isActive ? (
+                          <>
+                            <TrendingUp size={12} className="text-lime-400" />
+                            <span className="text-lime-400 text-xs font-medium">
+                              Ativo
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <TrendingUp size={12} className="text-gray-500" />
+                            <span className="text-gray-500 text-xs font-medium">
+                              Inativo
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
