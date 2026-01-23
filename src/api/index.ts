@@ -291,6 +291,7 @@ const mockAPI = {
       id: string;
       xp: number;
       level: number;
+      currentStreak?: number;
     };
   }> => {
     // No mock, simula completar treino e ganhar XP
@@ -301,6 +302,7 @@ const mockAPI = {
         const xpEarned = Math.floor(Math.random() * 50) + 10; // 10-60 XP
         const newXP = (mockStudentUser.points || 0) + xpEarned;
         const newLevel = Math.floor(newXP / 100) + 1;
+        const newStreak = (mockStudentUser.streak || 0) + 1;
 
         resolve({
           id: _workoutId,
@@ -309,6 +311,7 @@ const mockAPI = {
             id: mockStudentUser.id,
             xp: newXP,
             level: newLevel,
+            currentStreak: newStreak,
           },
         });
       }, 500);
