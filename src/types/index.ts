@@ -70,6 +70,26 @@ export interface StudentMedicalInfo {
   notes: string;
 }
 
+export interface WorkoutTemplate {
+  id: string;
+  title: string;
+  description?: string | null;
+  items: Array<{
+    id: string;
+    exercise: {
+      id: string;
+      name: string;
+    };
+    sets: number;
+    repetitions: number;
+    weight: number | null;
+    restTime: number;
+    observations: string | null;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface StudentData extends UserData {
   age: number;
 }

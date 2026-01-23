@@ -86,6 +86,15 @@ export const API_ENDPOINTS = {
     TOTAL: "/members/ranking/total",
   },
 
+  // Workout Templates
+  WORKOUT_TEMPLATES: {
+    LIST: "/workout-templates",
+    GET: (id: string) => `/workout-templates/${id}`,
+    CREATE: "/workout-templates",
+    DELETE: (id: string) => `/workout-templates/${id}`,
+    APPLY: "/workout-templates/apply",
+  },
+
   // Preferences
   PREFERENCES: {
     GET: "/preferences",

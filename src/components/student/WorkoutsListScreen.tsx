@@ -104,7 +104,8 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
       console.log('[WorkoutsListScreen] Iniciando completar treino:', { workoutId, userId: user.id });
       
       // Chamar o backend para completar o treino e ganhar XP
-      const result = await api.completeWorkout(workoutId, user.id);
+      // O memberId é extraído automaticamente do token JWT no backend
+      const result = await api.completeWorkout(workoutId);
       
       console.log('[WorkoutsListScreen] Resposta do backend:', result);
       

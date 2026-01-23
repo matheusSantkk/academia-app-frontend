@@ -8,8 +8,11 @@ import {
   User,
   Dumbbell,
   Check,
+  FileText,
+  Sparkles,
+  X,
 } from "lucide-react";
-import type { StudentData, Workout, Exercise } from "../../types";
+import type { StudentData, Workout, Exercise, WorkoutTemplate } from "../../types";
 import { api } from "../../api";
 import { useTheme } from "../../theme/context";
 import { getThemeColors } from "../../theme/colors";
@@ -30,12 +33,24 @@ export default function CreateTrainingScreen({
   const [training, setTraining] = useState<Workout[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
+  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
+  const [applyingTemplate, setApplyingTemplate] = useState(false);
 
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
+  const isMockMode = () => {
+    return import.meta.env.VITE_API_MODE === "mock";
+  };
+
   useEffect(() => {
     api.getStudents().then((list) => setStudents(list));
+    if (!isMockMode()) {
+      api.getWorkoutTemplates().then((list) => setTemplates(list)).catch(() => {
+        // Ignorar erro se não houver templates
+      });
+    }
   }, []);
 
   const filtered = students.filter((s) =>
@@ -221,6 +236,64 @@ export default function CreateTrainingScreen({
                 </button>
               </div>
 
+              {/* Templates Section */}
+              {templates.length > 0 && (
+                <div className={`${colors.card} border ${colors.border} p-4 md:p-6 rounded-2xl mb-6`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <FileText className={`w-5 h-5 ${colors.textSecondary}`} />
+                      <h3 className="font-semibold text-lg">Treinos Padrões</h3>
+                    </div>
+                    <button
+                      onClick={() => setShowCreateTemplateModal(true)}
+                      className={`text-sm px-3 py-1.5 rounded-lg ${colors.input} border ${colors.border} hover:border-lime-400 transition flex items-center gap-2`}
+                    >
+                      <Plus size={16} />
+                      Criar Template
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {templates.map((template) => (
+                      <div
+                        key={template.id}
+                        className={`${colors.input} border ${colors.border} rounded-xl p-4 hover:border-lime-400 transition ${applyingTemplate ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                        onClick={async () => {
+                          if (!selectedStudentId) return;
+                          if (applyingTemplate) return;
+                          setApplyingTemplate(true);
+                          try {
+                            const ws = await api.applyWorkoutTemplate(
+                              template.id,
+                              selectedStudentId,
+                            );
+                            setTraining(ws || []);
+                            alert(`Template "${template.title}" aplicado com sucesso!`);
+                          } catch (error) {
+                            console.error("Erro ao aplicar template:", error);
+                            alert("Erro ao aplicar template. Tente novamente.");
+                          } finally {
+                            setApplyingTemplate(false);
+                          }
+                        }}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <h4 className="font-semibold text-sm">{template.title}</h4>
+                          <Sparkles className={`w-4 h-4 ${colors.textSecondary} shrink-0`} />
+                        </div>
+                        {template.description && (
+                          <p className={`text-xs ${colors.textSecondary} mb-2`}>
+                            {template.description}
+                          </p>
+                        )}
+                        <p className={`text-xs ${colors.textSecondary}`}>
+                          {template.items.length} exercício{template.items.length !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Training Editor */}
               <div className="space-y-5 pb-6">
                 {training.length === 0 && (
@@ -228,10 +301,17 @@ export default function CreateTrainingScreen({
                     <Dumbbell
                       className={`w-14 h-14 ${colors.textSecondary} mx-auto mb-3`}
                     />
-                    <p className={`${colors.textSecondary} text-sm`}>
-                      Nenhum treino criado ainda. Clique no botão abaixo para
-                      começar.
+                    <p className={`${colors.textSecondary} text-sm mb-4`}>
+                      Nenhum treino criado ainda. Use um template padrão ou crie um treino personalizado.
                     </p>
+                    {templates.length === 0 && (
+                      <button
+                        onClick={() => setShowCreateTemplateModal(true)}
+                        className={`px-4 py-2 rounded-lg ${colors.button} text-sm font-medium`}
+                      >
+                        Criar Primeiro Template
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -497,6 +577,266 @@ export default function CreateTrainingScreen({
             </div>
           </>
         )}
+
+        {/* Modal para criar template */}
+        {showCreateTemplateModal && (
+          <CreateTemplateModal
+            onClose={() => setShowCreateTemplateModal(false)}
+            onSave={async (template) => {
+              try {
+                const newTemplate = await api.createWorkoutTemplate(template);
+                setTemplates([...templates, newTemplate]);
+                setShowCreateTemplateModal(false);
+                alert("Template criado com sucesso!");
+              } catch (error) {
+                console.error("Erro ao criar template:", error);
+                alert("Erro ao criar template. Tente novamente.");
+              }
+            }}
+            colors={colors}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Modal para criar template
+function CreateTemplateModal({
+  onClose,
+  onSave,
+  colors,
+}: {
+  onClose: () => void;
+  onSave: (template: {
+    title: string;
+    description?: string;
+    items: Array<{
+      exerciseName: string;
+      sets: number;
+      reps: string;
+      weight?: number;
+      rest?: string;
+      observations?: string;
+    }>;
+  }) => void;
+  colors: ReturnType<typeof getThemeColors>;
+}) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [items, setItems] = useState<Array<{
+    exerciseName: string;
+    sets: number;
+    reps: string;
+    weight?: number;
+    rest?: string;
+    observations?: string;
+  }>>([]);
+
+  function addItem() {
+    setItems([
+      ...items,
+      {
+        exerciseName: "",
+        sets: 3,
+        reps: "8-12",
+        weight: 0,
+        rest: "60s",
+      },
+    ]);
+  }
+
+  function updateItem(
+    index: number,
+    patch: Partial<{
+      exerciseName: string;
+      sets: number;
+      reps: string;
+      weight?: number;
+      rest?: string;
+      observations?: string;
+    }>,
+  ) {
+    const copy = [...items];
+    copy[index] = { ...copy[index], ...patch };
+    setItems(copy);
+  }
+
+  function removeItem(index: number) {
+    setItems(items.filter((_, i) => i !== index));
+  }
+
+  function handleSave() {
+    if (!title.trim()) {
+      alert("Digite um título para o template");
+      return;
+    }
+    if (items.length === 0) {
+      alert("Adicione pelo menos um exercício");
+      return;
+    }
+    if (items.some((item) => !item.exerciseName.trim())) {
+      alert("Preencha o nome de todos os exercícios");
+      return;
+    }
+    onSave({ title, description: description || undefined, items });
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div
+        className={`${colors.card} rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto border ${colors.border}`}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold">Criar Template de Treino</h2>
+          <button
+            onClick={onClose}
+            className={`p-2 rounded-lg hover:bg-red-400/10 text-red-400 transition`}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className={`text-sm font-medium ${colors.textSecondary} mb-2 block`}>
+              Título do Template *
+            </label>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Ex: Treino A - Hipertrofia"
+              className={`w-full ${colors.input} ${colors.text} rounded-lg px-4 py-2.5 border ${colors.border} focus:border-lime-400 focus:outline-none`}
+            />
+          </div>
+
+          <div>
+            <label className={`text-sm font-medium ${colors.textSecondary} mb-2 block`}>
+              Descrição (opcional)
+            </label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Descrição do template..."
+              rows={3}
+              className={`w-full ${colors.input} ${colors.text} rounded-lg px-4 py-2.5 border ${colors.border} focus:border-lime-400 focus:outline-none resize-none`}
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className={`text-sm font-medium ${colors.textSecondary}`}>
+                Exercícios *
+              </label>
+              <button
+                onClick={addItem}
+                className={`px-3 py-1.5 rounded-lg ${colors.input} border ${colors.border} hover:border-lime-400 transition flex items-center gap-2 text-sm`}
+              >
+                <Plus size={16} />
+                Adicionar Exercício
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              {items.map((item, index) => (
+                <div
+                  key={index}
+                  className={`${colors.input} border ${colors.border} rounded-xl p-4`}
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    <div
+                      className={`w-8 h-8 rounded-lg ${colors.card} border ${colors.border} flex items-center justify-center text-sm font-bold shrink-0`}
+                    >
+                      {index + 1}
+                    </div>
+                    <input
+                      value={item.exerciseName}
+                      onChange={(e) =>
+                        updateItem(index, { exerciseName: e.target.value })
+                      }
+                      placeholder="Nome do exercício"
+                      className={`flex-1 min-w-0 ${colors.card} ${colors.text} rounded-lg px-3 py-2 border ${colors.border} focus:border-lime-400 focus:outline-none text-sm`}
+                    />
+                    <button
+                      onClick={() => removeItem(index)}
+                      className="p-2 rounded-lg text-red-400 hover:bg-red-400/10 transition shrink-0"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div>
+                      <label className={`text-xs ${colors.textSecondary} mb-1.5 block`}>
+                        Séries
+                      </label>
+                      <input
+                        type="number"
+                        value={item.sets}
+                        onChange={(e) =>
+                          updateItem(index, { sets: Number(e.target.value) || 0 })
+                        }
+                        className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2 text-sm text-center border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                        min="1"
+                      />
+                    </div>
+                    <div>
+                      <label className={`text-xs ${colors.textSecondary} mb-1.5 block`}>
+                        Repetições
+                      </label>
+                      <input
+                        value={item.reps}
+                        onChange={(e) => updateItem(index, { reps: e.target.value })}
+                        placeholder="8-12"
+                        className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2 text-sm text-center border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`text-xs ${colors.textSecondary} mb-1.5 block`}>
+                        Peso (kg)
+                      </label>
+                      <input
+                        type="number"
+                        value={item.weight || 0}
+                        onChange={(e) =>
+                          updateItem(index, { weight: Number(e.target.value) || 0 })
+                        }
+                        className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2 text-sm text-center border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                        min="0"
+                        step="2.5"
+                      />
+                    </div>
+                    <div>
+                      <label className={`text-xs ${colors.textSecondary} mb-1.5 block`}>
+                        Descanso
+                      </label>
+                      <input
+                        value={item.rest || "60s"}
+                        onChange={(e) => updateItem(index, { rest: e.target.value })}
+                        placeholder="60s"
+                        className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2 text-sm text-center border ${colors.border} focus:border-lime-400 focus:outline-none`}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 mt-6">
+          <button
+            onClick={onClose}
+            className={`flex-1 py-3 rounded-xl ${colors.input} border ${colors.border} font-medium transition hover:border-red-400`}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            className={`flex-1 py-3 rounded-xl ${colors.button} font-medium transition`}
+          >
+            Salvar Template
+          </button>
+        </div>
       </div>
     </div>
   );

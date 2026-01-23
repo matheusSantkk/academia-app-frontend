@@ -45,6 +45,7 @@ export const calculateBonusXP = (
 // --- Storage helpers ---
 const LOCAL_STUDENTS_KEY = "app_students_v1";
 const LOCAL_TRAININGS_KEY = "app_trainings_v1";
+const LOCAL_TEMPLATES_KEY = "app_workout_templates_v1";
 
 type TrainingsMap = Record<string, Workout[]>;
 
@@ -137,6 +138,101 @@ const trainingsStore = (() => {
       map[studentId] = workouts;
       save();
       return map[studentId];
+    },
+  } as const;
+})();
+
+type StoredWorkoutTemplate = {
+  id: string;
+  title: string;
+  description?: string | null;
+  items: Array<{
+    id: string;
+    exercise: { id: string; name: string };
+    sets: number;
+    repetitions: number;
+    weight: number | null;
+    restTime: number;
+    observations: string | null;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+};
+
+const templatesStore = (() => {
+  let templates: StoredWorkoutTemplate[] = [];
+
+  const load = (): StoredWorkoutTemplate[] => {
+    try {
+      const raw = localStorage.getItem(LOCAL_TEMPLATES_KEY);
+      if (raw) {
+        templates = JSON.parse(raw) as StoredWorkoutTemplate[];
+        return templates;
+      }
+    } catch {
+      // ignore
+    }
+    templates = [];
+    save();
+    return templates;
+  };
+
+  const save = () => {
+    try {
+      localStorage.setItem(LOCAL_TEMPLATES_KEY, JSON.stringify(templates));
+    } catch {
+      // ignore
+    }
+  };
+
+  load();
+
+  return {
+    list: () => templates,
+    create: (payload: {
+      title: string;
+      description?: string;
+      items: Array<{
+        exerciseName: string;
+        sets: number;
+        reps: string;
+        weight?: number;
+        rest?: string;
+        observations?: string;
+      }>;
+    }): StoredWorkoutTemplate => {
+      const now = new Date().toISOString();
+      const id = `t${Date.now()}`;
+      const tpl: StoredWorkoutTemplate = {
+        id,
+        title: payload.title,
+        description: payload.description ?? null,
+        items: payload.items.map((it, idx) => ({
+          id: `${id}-i${idx}-${Date.now()}`,
+          exercise: { id: `ex-${Date.now()}-${idx}`, name: it.exerciseName },
+          sets: it.sets,
+          repetitions: (() => {
+            const m = String(it.reps || "").match(/(\d+)/);
+            return m ? Number(m[1]) : 10;
+          })(),
+          weight: it.weight && it.weight > 0 ? it.weight : null,
+          restTime: (() => {
+            const m = String(it.rest || "60").replace(/[^0-9]/g, "");
+            const n = Number(m);
+            return Number.isFinite(n) && n > 0 ? n : 60;
+          })(),
+          observations: it.observations ?? null,
+        })),
+        createdAt: now,
+        updatedAt: now,
+      };
+      templates = [tpl, ...templates];
+      save();
+      return tpl;
+    },
+    delete: (id: string) => {
+      templates = templates.filter((t) => t.id !== id);
+      save();
     },
   } as const;
 })();
@@ -283,7 +379,6 @@ const mockAPI = {
 
   completeWorkout: async (
     _workoutId: string,
-    _memberId?: string,
   ): Promise<{
     id: string;
     xpEarned: number;
@@ -295,8 +390,6 @@ const mockAPI = {
     };
   }> => {
     // No mock, simula completar treino e ganhar XP
-    // marcar _memberId como usado (pode ser undefined)
-    void _memberId;
     return new Promise((resolve) => {
       setTimeout(() => {
         const xpEarned = Math.floor(Math.random() * 50) + 10; // 10-60 XP
@@ -331,6 +424,68 @@ const mockAPI = {
     // No mock, retorna histórico vazio
     return new Promise((resolve) =>
       setTimeout(() => resolve([]), 300),
+    );
+  },
+
+  // Workout Templates (mock)
+  getWorkoutTemplates: async (): Promise<import("../types").WorkoutTemplate[]> => {
+    return new Promise((resolve) =>
+      setTimeout(() => resolve(templatesStore.list() as any), 200),
+    );
+  },
+
+  createWorkoutTemplate: async (template: {
+    title: string;
+    description?: string;
+    items: Array<{
+      exerciseName: string;
+      sets: number;
+      reps: string;
+      weight?: number;
+      rest?: string;
+      observations?: string;
+    }>;
+  }): Promise<import("../types").WorkoutTemplate> => {
+    return new Promise((resolve) =>
+      setTimeout(() => resolve(templatesStore.create(template) as any), 300),
+    );
+  },
+
+  applyWorkoutTemplate: async (
+    templateId: string,
+    memberId: string,
+  ): Promise<Workout[]> => {
+    const tpl = templatesStore.list().find((t) => t.id === templateId);
+    if (!tpl) {
+      throw new Error("Template não encontrado");
+    }
+
+    const workout: Workout = {
+      id: `w-${Date.now()}`,
+      type: "A",
+      name: tpl.title,
+      exercises: tpl.items.map((it, idx) => ({
+        id: `e-${Date.now()}-${idx}`,
+        name: it.exercise.name,
+        series: it.sets,
+        reps: String(it.repetitions),
+        weight: it.weight ?? 0,
+        rest: `${it.restTime}s`,
+        completed: false,
+      })),
+    };
+
+    const current = trainingsStore.get(memberId);
+    const updated = trainingsStore.set(memberId, [...current, workout]);
+    return new Promise((resolve) => setTimeout(() => resolve(updated), 250));
+  },
+
+  deleteWorkoutTemplate: async (id: string): Promise<void> => {
+    return new Promise((resolve) =>
+      setTimeout(() => {
+        templatesStore.delete(id);
+        resolve();
+      }, 200),
     );
   },
 };
@@ -634,7 +789,6 @@ const serverAPI = {
 
   completeWorkout: async (
     workoutId: string,
-    memberId?: string,
   ): Promise<{
     id: string;
     xpEarned: number;
@@ -645,7 +799,7 @@ const serverAPI = {
       currentStreak?: number;
     };
   }> => {
-    // O memberId é extraído do token JWT no backend, não deve ser enviado no body
+    // O memberId é extraído do token JWT no backend, não precisa ser enviado
     // O DTO só aceita workoutId
     return httpClient.post<{
       id: string;
@@ -658,7 +812,6 @@ const serverAPI = {
       };
     }>(API_ENDPOINTS.WORKOUT_HISTORY.COMPLETE_WORKOUT, {
       workoutId,
-      // Não enviar memberId no body - será extraído do token JWT
     });
   },
 
@@ -680,6 +833,51 @@ const serverAPI = {
       xpEarned: number;
       createdAt: string;
     }>>(API_ENDPOINTS.WORKOUT_HISTORY.BY_MEMBER(memberId));
+  },
+
+  // Workout Templates
+  getWorkoutTemplates: async (): Promise<import("../types").WorkoutTemplate[]> => {
+    return httpClient.get<import("../types").WorkoutTemplate[]>(
+      API_ENDPOINTS.WORKOUT_TEMPLATES.LIST,
+    );
+  },
+
+  getWorkoutTemplate: async (id: string): Promise<import("../types").WorkoutTemplate> => {
+    return httpClient.get<import("../types").WorkoutTemplate>(
+      API_ENDPOINTS.WORKOUT_TEMPLATES.GET(id),
+    );
+  },
+
+  createWorkoutTemplate: async (template: {
+    title: string;
+    description?: string;
+    items: Array<{
+      exerciseName: string;
+      sets: number;
+      reps: string;
+      weight?: number;
+      rest?: string;
+      observations?: string;
+    }>;
+  }): Promise<import("../types").WorkoutTemplate> => {
+    return httpClient.post<import("../types").WorkoutTemplate>(
+      API_ENDPOINTS.WORKOUT_TEMPLATES.CREATE,
+      template,
+    );
+  },
+
+  applyWorkoutTemplate: async (
+    templateId: string,
+    memberId: string,
+  ): Promise<Workout[]> => {
+    return httpClient.post<Workout[]>(
+      API_ENDPOINTS.WORKOUT_TEMPLATES.APPLY,
+      { templateId, memberId },
+    );
+  },
+
+  deleteWorkoutTemplate: async (id: string): Promise<void> => {
+    return httpClient.delete<void>(API_ENDPOINTS.WORKOUT_TEMPLATES.DELETE(id));
   },
 };
 
