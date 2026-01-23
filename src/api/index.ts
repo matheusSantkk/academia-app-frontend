@@ -639,6 +639,7 @@ const serverAPI = {
       id: string;
       xp: number;
       level: number;
+      currentStreak?: number;
     };
   }> => {
     return httpClient.post<{
@@ -648,6 +649,7 @@ const serverAPI = {
         id: string;
         xp: number;
         level: number;
+        currentStreak?: number;
       };
     }>(API_ENDPOINTS.WORKOUT_HISTORY.COMPLETE_WORKOUT, {
       workoutId,

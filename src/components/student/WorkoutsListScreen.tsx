@@ -108,24 +108,28 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
       
       console.log('[WorkoutsListScreen] Resposta do backend:', result);
       
-      // Atualizar XP e level do usuário imediatamente
+      // Atualizar XP, level e streak do usuário imediatamente
       if (result && result.member) {
         const newXP = Number(result.member.xp) || 0;
         const newLevel = Number(result.member.level) || 1;
+        const newStreak = Number(result.member.currentStreak) || 0;
         const xpGained = Number(result.xpEarned) || 10;
         
         console.log('[WorkoutsListScreen] Atualizando dados:', { 
           newXP, 
           newLevel, 
+          newStreak,
           xpGained,
           oldXP: userData.points,
-          oldLevel: userData.level
+          oldLevel: userData.level,
+          oldStreak: userData.streak
         });
         
         setUserData(prev => ({
           ...prev,
           points: newXP,
           level: newLevel,
+          streak: newStreak,
         }));
         setEarnedXP(xpGained);
       } else {
