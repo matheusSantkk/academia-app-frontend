@@ -159,118 +159,126 @@ export default function CreateTemplatesScreen({ setActiveTab }: Props) {
             {templates.map((template) => (
               <div
                 key={template.id}
-                className={`${colors.card} border-2 ${colors.border} rounded-2xl p-5 md:p-6 shadow-lg hover:border-lime-400/60 hover:shadow-xl transition-all duration-200`}
+                className={`${colors.card} border-2 ${colors.border} rounded-2xl p-6 md:p-7 shadow-lg hover:border-lime-400/60 hover:shadow-xl transition-all duration-200`}
               >
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex items-start justify-between gap-4">
                   <div 
                     className="flex-1 cursor-pointer"
                     onClick={() => toggleTemplateExpanded(template.id)}
                   >
-                    <div className="flex items-center gap-3 mb-2">
-                      <Sparkles className="w-5 h-5 text-lime-400" />
-                      <h3 className="font-bold text-lg md:text-xl">{template.title}</h3>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lime-400 to-lime-500 flex items-center justify-center shadow-md">
+                        <Sparkles className="w-5 h-5 text-slate-900" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-extrabold text-xl md:text-2xl text-transparent bg-clip-text bg-gradient-to-r from-lime-400 to-lime-500 mb-1">
+                          {template.title}
+                        </h3>
+                        {template.description && (
+                          <p className={`${colors.textSecondary} text-sm font-medium leading-relaxed`}>
+                            {template.description}
+                          </p>
+                        )}
+                      </div>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleTemplateExpanded(template.id);
                         }}
-                        className="p-1 rounded-lg text-lime-400 hover:bg-lime-400/10 transition"
+                        className="p-2 rounded-xl text-lime-400 hover:bg-lime-400/10 transition-all hover:scale-110 active:scale-95"
                         title={expandedTemplates.has(template.id) ? "Recolher exercícios" : "Expandir exercícios"}
                       >
                         {expandedTemplates.has(template.id) ? (
-                          <ChevronUp size={16} />
+                          <ChevronUp size={20} />
                         ) : (
-                          <ChevronDown size={16} />
+                          <ChevronDown size={20} />
                         )}
                       </button>
                     </div>
-                    {template.description && (
-                      <p className={`${colors.textSecondary} text-sm mb-3`}>
-                        {template.description}
-                      </p>
-                    )}
-                    <div className="flex items-center gap-4 text-xs text-lime-400">
-                      <div className="flex items-center gap-1.5">
-                        <Activity size={14} />
-                        <span className={colors.textSecondary}>
+                    <div className="flex items-center gap-3 mt-3">
+                      <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-lime-400/10 border border-lime-400/20">
+                        <Activity size={16} className="text-lime-400" />
+                        <span className={`${colors.text} text-sm font-semibold`}>
                           {template.items.length} exercício{template.items.length !== 1 ? "s" : ""}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col gap-2 shrink-0">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         setEditingTemplate(template);
                         setShowCreateModal(true);
                       }}
-                      className="p-2 rounded-lg text-blue-400 hover:bg-blue-400/10 transition"
+                      className="p-2.5 rounded-xl text-blue-400 hover:bg-blue-400/10 transition-all hover:scale-110 active:scale-95"
                       title="Editar template"
                     >
-                      <Edit size={18} />
+                      <Edit size={20} />
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDelete(template.id);
                       }}
-                      className="p-2 rounded-lg text-red-400 hover:bg-red-400/10 transition"
+                      className="p-2.5 rounded-xl text-red-400 hover:bg-red-400/10 transition-all hover:scale-110 active:scale-95"
                       title="Deletar template"
                     >
-                      <Trash2 size={18} />
+                      <Trash2 size={20} />
                     </button>
                   </div>
                 </div>
 
                 {/* Lista de Exercícios do Template */}
                 {expandedTemplates.has(template.id) && (
-                  <div className="space-y-2 mt-4 pt-4 border-t border-lime-400/20 animate-fade-in">
+                  <div className="space-y-3 mt-6 pt-6 border-t border-lime-400/30 animate-fade-in">
                     {template.items.map((item, idx) => (
                     <div
                       key={item.id}
-                      className={`${colors.input} rounded-lg p-3 border ${colors.border}`}
+                      className={`${colors.input} rounded-xl p-4 border ${colors.border} hover:border-lime-400/40 transition-all shadow-sm`}
                     >
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-lime-400/20 border border-lime-400/30 flex items-center justify-center text-sm font-bold text-lime-400 shrink-0">
+                      <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-lime-400 to-lime-500 border-2 border-lime-400/30 flex items-center justify-center text-base font-extrabold text-slate-900 shrink-0 shadow-md">
                           {idx + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className={`${colors.text} font-semibold text-sm mb-2`}>
+                          <h4 className={`${colors.text} font-bold text-base mb-3 leading-tight`}>
                             {item.exercise.name}
-                          </p>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                            <div className="flex items-center gap-1.5 text-xs">
-                              <Repeat size={12} className={colors.textSecondary} />
-                              <span className={colors.textSecondary}>
+                          </h4>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+                            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-lime-400/5 border border-lime-400/10">
+                              <Repeat size={14} className="text-lime-400" />
+                              <span className={`${colors.text} text-sm font-semibold`}>
                                 {item.sets} séries
                               </span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-xs">
-                              <Activity size={12} className={colors.textSecondary} />
-                              <span className={colors.textSecondary}>
+                            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-blue-400/5 border border-blue-400/10">
+                              <Activity size={14} className="text-blue-400" />
+                              <span className={`${colors.text} text-sm font-semibold`}>
                                 {item.repetitions} reps
                               </span>
                             </div>
                             {item.weight && (
-                              <div className="flex items-center gap-1.5 text-xs">
-                                <Weight size={12} className={colors.textSecondary} />
-                                <span className={colors.textSecondary}>
+                              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-purple-400/5 border border-purple-400/10">
+                                <Weight size={14} className="text-purple-400" />
+                                <span className={`${colors.text} text-sm font-semibold`}>
                                   {item.weight} kg
                                 </span>
                               </div>
                             )}
-                            <div className="flex items-center gap-1.5 text-xs">
-                              <Clock size={12} className={colors.textSecondary} />
-                              <span className={colors.textSecondary}>
+                            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-orange-400/5 border border-orange-400/10">
+                              <Clock size={14} className="text-orange-400" />
+                              <span className={`${colors.text} text-sm font-semibold`}>
                                 {item.restTime}s
                               </span>
                             </div>
                           </div>
                           {item.observations && (
-                            <p className={`${colors.textSecondary} text-xs mt-2 italic`}>
-                              {item.observations}
-                            </p>
+                            <div className="mt-3 pt-3 border-t border-lime-400/10">
+                              <p className={`${colors.textSecondary} text-sm font-medium italic leading-relaxed`}>
+                                💡 {item.observations}
+                              </p>
+                            </div>
                           )}
                         </div>
                       </div>
