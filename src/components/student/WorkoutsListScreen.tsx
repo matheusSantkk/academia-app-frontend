@@ -676,7 +676,7 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
               }`}
             >
               <div 
-                className="flex items-center justify-between mb-3 cursor-pointer"
+                className="flex items-center justify-between cursor-pointer"
                 onClick={() => toggleWorkoutExpanded(workout.id)}
               >
                 <div className="flex-1 text-left">
@@ -690,20 +690,6 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
                         Completo
                       </span>
                     )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleWorkoutExpanded(workout.id);
-                      }}
-                      className="p-1 rounded-lg text-lime-400 hover:bg-lime-400/10 transition"
-                      title={isExpanded ? "Recolher exercícios" : "Expandir exercícios"}
-                    >
-                      {isExpanded ? (
-                        <ChevronUp size={18} />
-                      ) : (
-                        <ChevronDown size={18} />
-                      )}
-                    </button>
                   </div>
                   <h3 className={`${colors.text} font-bold text-lg`}>
                     {workout.name}
@@ -713,34 +699,49 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
                     completos
                   </p>
                 </div>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedWorkout(workout);
-                  }}
-                  className="p-2 rounded-lg text-lime-400 hover:bg-lime-400/10 transition"
-                  title="Ver detalhes do treino"
-                >
-                  <ChevronRight className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedWorkout(workout);
+                    }}
+                    className="p-2 rounded-lg text-lime-400 hover:bg-lime-400/10 transition"
+                    title="Ver detalhes do treino"
+                  >
+                    <ChevronRight className="w-6 h-6" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleWorkoutExpanded(workout.id);
+                    }}
+                    className="p-1 rounded-lg text-lime-400 hover:bg-lime-400/10 transition"
+                    title={isExpanded ? "Recolher exercícios" : "Expandir exercícios"}
+                  >
+                    {isExpanded ? (
+                      <ChevronUp size={24} />
+                    ) : (
+                      <ChevronDown size={24} />
+                    )}
+                  </button>
+                </div>
               </div>
 
-              {completedCount > 0 && (
-                <div className="mt-3">
-                  <div className="flex justify-between text-xs mb-2">
-                    <span className={colors.textSecondary}>Progresso</span>
-                    <span className="text-lime-400 font-semibold">
-                      {Math.round(progress)}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-lime-200/20 rounded-full h-2.5 overflow-hidden">
-                    <div
-                      className="bg-gradient-to-r from-lime-400 to-lime-500 h-2.5 rounded-full transition-all duration-500"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
+              {/* Progress bar visível mesmo quando recolhido */}
+              <div className="mt-4">
+                <div className="flex justify-between text-xs mb-1">
+                  <span className={colors.textSecondary}>Progresso</span>
+                  <span className="text-lime-400 font-semibold">
+                    {Math.round(progress)}%
+                  </span>
                 </div>
-              )}
+                <div className="w-full bg-lime-200/20 rounded-full h-2.5 overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-lime-400 to-lime-500 h-2.5 rounded-full transition-all duration-500"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
 
               {/* Lista de Exercícios (quando expandido) */}
               {isExpanded && (

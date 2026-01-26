@@ -15,6 +15,8 @@ import {
   Weight,
   Repeat,
   Activity,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import type { StudentData, Workout, Exercise, WorkoutTemplate } from "../../types";
 import { api } from "../../api";
@@ -40,6 +42,9 @@ export default function CreateTrainingScreen({
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
   const [applyingTemplate, setApplyingTemplate] = useState(false);
+  const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(
+    new Set(),
+  );
 
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
@@ -51,18 +56,21 @@ export default function CreateTrainingScreen({
   useEffect(() => {
     api.getStudents().then((list) => setStudents(list));
     if (!isMockMode()) {
-      api.getWorkoutTemplates().then((list) => setTemplates(list)).catch(() => {
-        // Ignorar erro se não houver templates
-      });
+      api
+        .getWorkoutTemplates()
+        .then((list) => setTemplates(list))
+        .catch(() => {
+          // Ignorar erro se não houver templates
+        });
     }
   }, []);
 
-  const filtered = students.filter((s) =>
+  const filtered = students.filter((s: StudentData) =>
     s.name.toLowerCase().includes(query.trim().toLowerCase()),
   );
 
   const selectedStudent =
-    students.find((s) => s.id === selectedStudentId) || null;
+    students.find((s: StudentData) => s.id === selectedStudentId) || null;
   const isEditMode = Boolean(selectedStudent);
 
   useEffect(() => {
@@ -96,7 +104,7 @@ export default function CreateTrainingScreen({
 
   function removeWorkout(wIdx: number) {
     if (confirm("Deseja remover este treino?")) {
-      setTraining(training.filter((_, i) => i !== wIdx));
+      setTraining(training.filter((_: Workout, i: number) => i !== wIdx));
     }
   }
 
@@ -120,7 +128,7 @@ export default function CreateTrainingScreen({
     exIdx: number,
     patch: Partial<Exercise>,
   ) {
-    const workCopy = training.map((w) => ({
+    const workCopy = training.map((w: Workout) => ({
       ...w,
       exercises: [...(w.exercises || [])],
     }));
@@ -131,7 +139,7 @@ export default function CreateTrainingScreen({
 
   function removeExercise(wIdx: number, exIdx: number) {
     if (confirm("Deseja remover este exercício?")) {
-      const workCopy = training.map((w) => ({
+      const workCopy = training.map((w: Workout) => ({
         ...w,
         exercises: [...(w.exercises || [])],
       }));
@@ -169,6 +177,18 @@ export default function CreateTrainingScreen({
     } finally {
       setSaving(false);
     }
+  }
+
+  function toggleWorkoutExpanded(workoutId: string) {
+    setExpandedWorkouts((prev: Set<string>) => {
+      const newSet = new Set(prev);
+      if (newSet.has(workoutId)) {
+        newSet.delete(workoutId);
+      } else {
+        newSet.add(workoutId);
+      }
+      return newSet;
+    });
   }
 
   return (
@@ -257,13 +277,27 @@ export default function CreateTrainingScreen({
                     </button>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {templates.map((template) => (
+                    {templates.map((template: WorkoutTemplate) => {
+                      // Verificar se já existe um treino com este título
+                      const alreadyHasThisWorkout = training.some(
+                        (w) => w.name === template.title
+                      );
+                      
+                      return (
                       <div
                         key={template.id}
-                        className={`${colors.input} border ${colors.border} rounded-xl p-4 hover:border-lime-400 transition ${applyingTemplate ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}
+                        className={`${colors.input} border ${colors.border} rounded-xl p-4 transition ${
+                          applyingTemplate || alreadyHasThisWorkout
+                            ? "opacity-60 cursor-not-allowed"
+                            : "hover:border-lime-400 cursor-pointer"
+                        }`}
                         onClick={async () => {
                           if (!selectedStudentId) return;
                           if (applyingTemplate) return;
+                          if (alreadyHasThisWorkout) {
+                            alert(`O treino "${template.title}" já foi adicionado para este aluno.`);
+                            return;
+                          }
                           setApplyingTemplate(true);
                           try {
                             // Aplicar template - o backend cria um novo treino
@@ -295,8 +329,14 @@ export default function CreateTrainingScreen({
                         <p className={`text-xs ${colors.textSecondary}`}>
                           {template.items.length} exercício{template.items.length !== 1 ? "s" : ""}
                         </p>
+                        {alreadyHasThisWorkout && (
+                          <p className="text-xs text-lime-400 font-medium mt-1">
+                            ✓ Já adicionado
+                          </p>
+                        )}
                       </div>
-                    ))}
+                    );
+                    })}
                   </div>
                 </div>
               )}
@@ -322,158 +362,188 @@ export default function CreateTrainingScreen({
                   </div>
                 )}
 
-                {training.map((w, wIdx) => (
-                  <div
-                    key={w.id}
-                    className={`${colors.card} border-2 ${colors.border} rounded-2xl p-5 md:p-6 shadow-lg hover:border-lime-400/60 hover:shadow-xl transition-all duration-200`}
-                  >
-                    {/* Header do Treino */}
-                    <div className="flex items-start justify-between mb-6">
-                      <div className="flex items-center gap-4 flex-1 min-w-0">
-                        <div className="w-14 h-14 bg-gradient-to-br from-lime-400 to-lime-500 rounded-xl flex items-center justify-center text-slate-900 font-bold text-xl shadow-md">
-                          {w.type}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <input
-                            value={w.name}
-                            onChange={(e) => {
-                              const copy = [...training];
-                              copy[wIdx].name = e.target.value;
-                              setTraining(copy);
-                            }}
-                            className={`font-bold text-lg md:text-xl ${colors.input} ${colors.text} rounded-lg px-4 py-2.5 border-2 ${colors.border} focus:border-lime-400 focus:outline-none w-full min-w-0 bg-transparent`}
-                            placeholder="Nome do treino"
-                          />
-                          <div className="flex items-center gap-4 mt-2">
-                            <div className="flex items-center gap-1.5 text-xs text-lime-400">
-                              <Activity size={14} />
-                              <span className={colors.textSecondary}>
-                                {w.exercises.length} exercício{w.exercises.length !== 1 ? "s" : ""}
-                              </span>
+                {training.map((w: Workout, wIdx: number) => {
+                  const isExpanded = expandedWorkouts.has(w.id);
+                  return (
+                    <div
+                      key={w.id}
+                      className={`${colors.card} border-2 ${colors.border} rounded-2xl p-5 md:p-6 shadow-lg hover:border-lime-400/60 hover:shadow-xl transition-all duration-200`}
+                    >
+                      {/* Header do Treino */}
+                      <div
+                        className="flex items-start justify-between cursor-pointer"
+                        onClick={() => toggleWorkoutExpanded(w.id)}
+                      >
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <div className="w-14 h-14 bg-gradient-to-br from-lime-400 to-lime-500 rounded-xl flex items-center justify-center text-slate-900 font-bold text-xl shadow-md">
+                            {w.type}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <input
+                              value={w.name}
+                              onClick={(e) => e.stopPropagation()}
+                              onChange={(e) => {
+                                const copy = [...training];
+                                copy[wIdx].name = e.target.value;
+                                setTraining(copy);
+                              }}
+                              className={`font-bold text-lg md:text-xl ${colors.input} ${colors.text} rounded-lg px-4 py-2.5 border-2 ${colors.border} focus:border-lime-400 focus:outline-none w-full min-w-0 bg-transparent`}
+                              placeholder="Nome do treino"
+                            />
+                            <div className="flex items-center gap-4 mt-2">
+                              <div className="flex items-center gap-1.5 text-xs text-lime-400">
+                                <Activity size={14} />
+                                <span className={colors.textSecondary}>
+                                  {w.exercises.length} exercício
+                                  {w.exercises.length !== 1 ? "s" : ""}
+                                </span>
+                              </div>
                             </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeWorkout(wIdx);
+                            }}
+                            className="flex items-center justify-center p-2.5 rounded-lg text-red-400 hover:bg-red-400/10 transition shrink-0"
+                            title="Remover treino"
+                          >
+                            <Trash2 size={20} />
+                          </button>
+                          <div className="p-2.5">
+                            {isExpanded ? (
+                              <ChevronUp size={20} />
+                            ) : (
+                              <ChevronDown size={20} />
+                            )}
                           </div>
                         </div>
                       </div>
-                      <button
-                        onClick={() => removeWorkout(wIdx)}
-                        className="flex items-center justify-center p-2.5 rounded-lg text-red-400 hover:bg-red-400/10 transition shrink-0"
-                        title="Remover treino"
-                      >
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
 
-                    {/* Lista de Exercícios */}
-                    <div className="space-y-3">
-                      {(w.exercises || []).map((ex, exIdx) => (
-                        <div
-                          key={ex.id}
-                          className={`${colors.input} rounded-xl p-4 border ${colors.border} hover:border-lime-400/50 hover:shadow-md transition-all duration-200`}
-                        >
-                          <div className="flex items-start gap-3 mb-3">
-                            <div className="w-10 h-10 rounded-lg bg-lime-400/20 border border-lime-400/30 flex items-center justify-center text-sm font-bold text-lime-400 shrink-0">
-                              {exIdx + 1}
-                            </div>
-                            <input
-                              value={ex.name}
-                              onChange={(e) =>
-                                updateExercise(wIdx, exIdx, {
-                                  name: e.target.value,
-                                })
-                              }
-                              placeholder="Nome do exercício"
-                              className={`flex-1 min-w-0 ${colors.card} ${colors.text} rounded-lg px-3 py-2 border ${colors.border} focus:border-lime-400 focus:outline-none text-sm font-semibold`}
-                            />
-                            <button
-                              onClick={() => removeExercise(wIdx, exIdx)}
-                              className="p-2 rounded-lg text-red-400 hover:bg-red-400/10 transition shrink-0"
-                              title="Remover exercício"
+                      {/* Lista de Exercícios (collapsible) */}
+                      {isExpanded && (
+                        <div className="space-y-3 mt-6 animate-fade-in">
+                          {(w.exercises || []).map((ex: Exercise, exIdx: number) => (
+                            <div
+                              key={ex.id}
+                              className={`${colors.input} rounded-xl p-4 border ${colors.border} hover:border-lime-400/50 hover:shadow-md transition-all duration-200`}
                             >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                            <div className="space-y-1.5">
-                              <label className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}>
-                                <Repeat size={12} />
-                                Séries
-                              </label>
-                              <input
-                                type="number"
-                                value={String(ex.series)}
-                                onChange={(e) =>
-                                  updateExercise(wIdx, exIdx, {
-                                    series: Number(e.target.value) || 0,
-                                  })
-                                }
-                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
-                                min="1"
-                              />
+                              <div className="flex items-start gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-lg bg-lime-400/20 border border-lime-400/30 flex items-center justify-center text-sm font-bold text-lime-400 shrink-0">
+                                  {exIdx + 1}
+                                </div>
+                                <input
+                                  value={ex.name}
+                                  onChange={(e) =>
+                                    updateExercise(wIdx, exIdx, {
+                                      name: e.target.value,
+                                    })
+                                  }
+                                  placeholder="Nome do exercício"
+                                  className={`flex-1 min-w-0 ${colors.card} ${colors.text} rounded-lg px-3 py-2 border ${colors.border} focus:border-lime-400 focus:outline-none text-sm font-semibold`}
+                                />
+                                <button
+                                  onClick={() => removeExercise(wIdx, exIdx)}
+                                  className="p-2 rounded-lg text-red-400 hover:bg-red-400/10 transition shrink-0"
+                                  title="Remover exercício"
+                                >
+                                  <Trash2 size={18} />
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div className="space-y-1.5">
+                                  <label
+                                    className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}
+                                  >
+                                    <Repeat size={12} />
+                                    Séries
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={String(ex.series)}
+                                    onChange={(e) =>
+                                      updateExercise(wIdx, exIdx, {
+                                        series: Number(e.target.value) || 0,
+                                      })
+                                    }
+                                    className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
+                                    min="1"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label
+                                    className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}
+                                  >
+                                    <Activity size={12} />
+                                    Repetições
+                                  </label>
+                                  <input
+                                    value={ex.reps}
+                                    onChange={(e) =>
+                                      updateExercise(wIdx, exIdx, {
+                                        reps: e.target.value,
+                                      })
+                                    }
+                                    placeholder="8-12"
+                                    className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label
+                                    className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}
+                                  >
+                                    <Weight size={12} />
+                                    Peso (kg)
+                                  </label>
+                                  <input
+                                    type="number"
+                                    value={String(ex.weight)}
+                                    onChange={(e) =>
+                                      updateExercise(wIdx, exIdx, {
+                                        weight:
+                                          Number(e.target.value) || 0,
+                                      })
+                                    }
+                                    className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
+                                    min="0"
+                                    step="2.5"
+                                  />
+                                </div>
+                                <div className="space-y-1.5">
+                                  <label
+                                    className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}
+                                  >
+                                    <Clock size={12} />
+                                    Descanso
+                                  </label>
+                                  <input
+                                    value={ex.rest}
+                                    onChange={(e) =>
+                                      updateExercise(wIdx, exIdx, {
+                                        rest: e.target.value,
+                                      })
+                                    }
+                                    placeholder="60s"
+                                    className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
+                                  />
+                                </div>
+                              </div>
                             </div>
-                            <div className="space-y-1.5">
-                              <label className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}>
-                                <Activity size={12} />
-                                Repetições
-                              </label>
-                              <input
-                                value={ex.reps}
-                                onChange={(e) =>
-                                  updateExercise(wIdx, exIdx, {
-                                    reps: e.target.value,
-                                  })
-                                }
-                                placeholder="8-12"
-                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <label className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}>
-                                <Weight size={12} />
-                                Peso (kg)
-                              </label>
-                              <input
-                                type="number"
-                                value={String(ex.weight)}
-                                onChange={(e) =>
-                                  updateExercise(wIdx, exIdx, {
-                                    weight: Number(e.target.value) || 0,
-                                  })
-                                }
-                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
-                                min="0"
-                                step="2.5"
-                              />
-                            </div>
-                            <div className="space-y-1.5">
-                              <label className={`text-xs ${colors.textSecondary} flex items-center gap-1.5 font-medium`}>
-                                <Clock size={12} />
-                                Descanso
-                              </label>
-                              <input
-                                value={ex.rest}
-                                onChange={(e) =>
-                                  updateExercise(wIdx, exIdx, {
-                                    rest: e.target.value,
-                                  })
-                                }
-                                placeholder="60s"
-                                className={`w-full ${colors.card} ${colors.text} rounded-lg px-3 py-2.5 text-sm text-center font-bold border-2 ${colors.border} focus:border-lime-400 focus:outline-none`}
-                              />
-                            </div>
-                          </div>
+                          ))}
+                          <button
+                            onClick={() => addExercise(wIdx)}
+                            className={`w-full mt-4 py-2.5 md:py-3 ${colors.input} border-2 border-dashed ${colors.border} rounded-xl font-medium text-sm hover:border-lime-400 hover:bg-lime-400/5 transition flex items-center justify-center gap-2 active:scale-[0.98]`}
+                          >
+                            <Plus size={18} />
+                            Adicionar Exercício
+                          </button>
                         </div>
-                      ))}
+                      )}
                     </div>
-
-                    <button
-                      onClick={() => addExercise(wIdx)}
-                      className={`w-full mt-4 py-2.5 md:py-3 ${colors.input} border-2 border-dashed ${colors.border} rounded-xl font-medium text-sm hover:border-lime-400 hover:bg-lime-400/5 transition flex items-center justify-center gap-2 active:scale-[0.98]`}
-                    >
-                      <Plus size={18} />
-                      Adicionar Exercício
-                    </button>
-                  </div>
-                ))}
+                  );
+                })}
 
                 <button
                   onClick={addWorkout}
@@ -537,7 +607,7 @@ export default function CreateTrainingScreen({
             </div>
 
             <div className="flex flex-col gap-3">
-              {filtered.map((student) => (
+              {filtered.map((student: StudentData) => (
                 <div
                   key={student.id}
                   className={`${colors.card} border ${colors.border} p-5 rounded-xl shadow-md transition hover:border-lime-400 cursor-pointer active:scale-[0.98]`}
@@ -605,6 +675,15 @@ export default function CreateTrainingScreen({
 }
 
 // Modal para criar template
+interface TemplateItem {
+  exerciseName: string;
+  sets: number;
+  reps: string;
+  weight?: number;
+  rest?: string;
+  observations?: string;
+}
+
 function CreateTemplateModal({
   onClose,
   onSave,
@@ -614,27 +693,13 @@ function CreateTemplateModal({
   onSave: (template: {
     title: string;
     description?: string;
-    items: Array<{
-      exerciseName: string;
-      sets: number;
-      reps: string;
-      weight?: number;
-      rest?: string;
-      observations?: string;
-    }>;
+    items: TemplateItem[];
   }) => void;
   colors: ReturnType<typeof getThemeColors>;
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [items, setItems] = useState<Array<{
-    exerciseName: string;
-    sets: number;
-    reps: string;
-    weight?: number;
-    rest?: string;
-    observations?: string;
-  }>>([]);
+  const [items, setItems] = useState<TemplateItem[]>([]);
 
   function addItem() {
     setItems([
@@ -666,7 +731,7 @@ function CreateTemplateModal({
   }
 
   function removeItem(index: number) {
-    setItems(items.filter((_, i) => i !== index));
+    setItems(items.filter((_: TemplateItem, i: number) => i !== index));
   }
 
   function handleSave() {
@@ -678,7 +743,7 @@ function CreateTemplateModal({
       alert("Adicione pelo menos um exercício");
       return;
     }
-    if (items.some((item) => !item.exerciseName.trim())) {
+    if (items.some((item: TemplateItem) => !item.exerciseName.trim())) {
       alert("Preencha o nome de todos os exercícios");
       return;
     }
@@ -741,7 +806,7 @@ function CreateTemplateModal({
             </div>
 
             <div className="space-y-3">
-              {items.map((item, index) => (
+              {items.map((item: TemplateItem, index: number) => (
                 <div
                   key={index}
                   className={`${colors.input} border ${colors.border} rounded-xl p-4`}

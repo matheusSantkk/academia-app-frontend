@@ -606,9 +606,22 @@ const mockAPI = {
       throw new Error("Template não encontrado");
     }
 
+    // Verificar se já existe um treino com este título para este aluno
+    const current = trainingsStore.get(memberId);
+    const existingWorkout = current.find((w) => w.name === tpl.title);
+    
+    // Se já existe, retornar os treinos sem criar um novo
+    if (existingWorkout) {
+      return new Promise((resolve) => setTimeout(() => resolve(current), 250));
+    }
+
+    // Determinar o tipo baseado na quantidade de treinos existentes
+    const types = ['A', 'B', 'C'] as const;
+    const type = types[current.length % 3] || 'A';
+
     const workout: Workout = {
       id: `w-${Date.now()}`,
-      type: "A",
+      type: type,
       name: tpl.title,
       exercises: tpl.items.map((it, idx) => ({
         id: `e-${Date.now()}-${idx}`,
@@ -621,7 +634,6 @@ const mockAPI = {
       })),
     };
 
-    const current = trainingsStore.get(memberId);
     const updated = trainingsStore.set(memberId, [...current, workout]);
     return new Promise((resolve) => setTimeout(() => resolve(updated), 250));
   },
