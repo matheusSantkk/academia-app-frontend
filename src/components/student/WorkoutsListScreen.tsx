@@ -13,6 +13,11 @@ import {
   Target,
   Flame,
   TrendingUp,
+  ChevronDown,
+  ChevronUp,
+  Repeat,
+  Activity,
+  Weight,
 } from "lucide-react";
 import type { UserData, Workout } from "../../types";
 import { api } from "../../api";
@@ -36,6 +41,7 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const [previousAchievements, setPreviousAchievements] = useState<Set<string>>(new Set());
   const [userData, setUserData] = useState<UserData>(user);
+  const [expandedWorkouts, setExpandedWorkouts] = useState<Set<string>>(new Set());
   const { theme } = useTheme();
   const colors = getThemeColors(theme);
 
@@ -70,6 +76,18 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
         console.error("[WorkoutsListScreen] Erro ao atualizar histórico:", error);
       });
   }, [userData.points, user.id]);
+
+  function toggleWorkoutExpanded(workoutId: string) {
+    setExpandedWorkouts((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(workoutId)) {
+        newSet.delete(workoutId);
+      } else {
+        newSet.add(workoutId);
+      }
+      return newSet;
+    });
+  }
 
   const updateWeight = (
     workoutId: string,
@@ -644,20 +662,23 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
           const progress =
             totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
           const allCompleted = completedCount === totalCount;
+          const isExpanded = expandedWorkouts.has(workout.id);
 
           return (
-            <button
+            <div
               key={workout.id}
-              onClick={() => setSelectedWorkout(workout)}
               className={`${
                 colors.card
-              } border rounded-xl p-5 w-full transition-all shadow-md active:scale-[0.98] ${
+              } border rounded-xl p-5 w-full transition-all shadow-md ${
                 allCompleted
                   ? "border-lime-400 bg-lime-400/5 shadow-lime-400/20"
                   : `${colors.border} hover:border-lime-400`
               }`}
             >
-              <div className="flex items-center justify-between mb-3">
+              <div 
+                className="flex items-center justify-between mb-3 cursor-pointer"
+                onClick={() => toggleWorkoutExpanded(workout.id)}
+              >
                 <div className="flex-1 text-left">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="bg-gradient-to-r from-lime-400 to-lime-500 text-slate-900 font-bold px-3 py-1.5 rounded-lg text-sm shadow-sm">
@@ -669,6 +690,20 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
                         Completo
                       </span>
                     )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleWorkoutExpanded(workout.id);
+                      }}
+                      className="p-1 rounded-lg text-lime-400 hover:bg-lime-400/10 transition"
+                      title={isExpanded ? "Recolher exercícios" : "Expandir exercícios"}
+                    >
+                      {isExpanded ? (
+                        <ChevronUp size={18} />
+                      ) : (
+                        <ChevronDown size={18} />
+                      )}
+                    </button>
                   </div>
                   <h3 className={`${colors.text} font-bold text-lg`}>
                     {workout.name}
@@ -678,9 +713,16 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
                     completos
                   </p>
                 </div>
-                <ChevronRight
-                  className={`w-6 h-6 ${colors.textSecondary} shrink-0`}
-                />
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedWorkout(workout);
+                  }}
+                  className="p-2 rounded-lg text-lime-400 hover:bg-lime-400/10 transition"
+                  title="Ver detalhes do treino"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
               </div>
 
               {completedCount > 0 && (
@@ -699,7 +741,67 @@ const WorkoutsListScreen: React.FC<WorkoutsListScreenProps> = ({ user, onUserDat
                   </div>
                 </div>
               )}
-            </button>
+
+              {/* Lista de Exercícios (quando expandido) */}
+              {isExpanded && (
+                <div className="mt-4 pt-4 border-t border-lime-400/20 space-y-2 animate-fade-in">
+                  {workout.exercises.map((exercise, idx) => (
+                    <div
+                      key={exercise.id}
+                      className={`${colors.input} rounded-lg p-3 border ${colors.border} ${
+                        exercise.completed ? "border-lime-400 bg-lime-400/5" : ""
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
+                          exercise.completed 
+                            ? "bg-lime-400 text-slate-900" 
+                            : "bg-lime-400/20 text-lime-400 border border-lime-400/30"
+                        }`}>
+                          {idx + 1}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`${colors.text} font-semibold text-sm mb-2 flex items-center gap-2`}>
+                            {exercise.name}
+                            {exercise.completed && (
+                              <Check size={14} className="text-lime-400" />
+                            )}
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <Repeat size={12} className={colors.textSecondary} />
+                              <span className={colors.textSecondary}>
+                                {exercise.series} séries
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <Activity size={12} className={colors.textSecondary} />
+                              <span className={colors.textSecondary}>
+                                {exercise.reps} reps
+                              </span>
+                            </div>
+                            {exercise.weight > 0 && (
+                              <div className="flex items-center gap-1.5">
+                                <Weight size={12} className={colors.textSecondary} />
+                                <span className={colors.textSecondary}>
+                                  {exercise.weight} kg
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex items-center gap-1.5">
+                              <Clock size={12} className={colors.textSecondary} />
+                              <span className={colors.textSecondary}>
+                                {exercise.rest}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           );
         })}
 

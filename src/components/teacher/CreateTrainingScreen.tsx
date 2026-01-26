@@ -266,11 +266,14 @@ export default function CreateTrainingScreen({
                           if (applyingTemplate) return;
                           setApplyingTemplate(true);
                           try {
-                            const ws = await api.applyWorkoutTemplate(
+                            // Aplicar template - o backend cria um novo treino
+                            await api.applyWorkoutTemplate(
                               template.id,
                               selectedStudentId,
                             );
-                            setTraining(ws || []);
+                            // Recarregar apenas os treinos do aluno para ter a lista atualizada
+                            const updatedTraining = await api.getTraining(selectedStudentId);
+                            setTraining(updatedTraining || []);
                             alert(`Template "${template.title}" aplicado com sucesso!`);
                           } catch (error) {
                             console.error("Erro ao aplicar template:", error);
